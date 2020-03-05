@@ -88,6 +88,8 @@ WORKING-STORAGE SECTION.
 77 nomJure PIC A(25).
 77 prenomJure PIC A(25).
 
+77 WFin PIC 9(1).
+
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
 STOP RUN.
@@ -159,6 +161,7 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
            WHEN 2 PERFORM AjouterJure
            WHEN 3 PERFORM ModifierJure
            WHEN 4 PERFORM SupprimerJure
+           WHEN 5 PERFORM RechercherJuresNonConvoques
        END-EVALUATE
 END-PERFORM.
 
@@ -253,71 +256,172 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
 END-PERFORM.
 
 
-ConsulterJures..
+ConsulterJures.
+OPEN INPUT FJures
+MOVE 0 TO WFin
+IF jureCR <> 0
+    DISPLAY 'Fichier vide !'
+ELSE
+    PERFORM WITH TEST AFTER UNTIL WFin = 1
+       READ FJures NEXT
+       AT END MOVE 1 TO WFin
+       NOT AT END
+           DISPLAY fj_nom, ' ', fj_prenom, ' ', fj_adresse' ', fj_departement
+       END-READ
+    END-PERFORM
+END-IF
+CLOSE FJures.
+*> Alvin
 
+AjouterJure.
+*> Alvin
+DISPLAY 'Saisir le nom et le prénom du juré :'
+ACCEPT fj_nom
+ACCEPT fj_prenom
 
-AjouterJure..
+OPEN INPUT FJures
+READ FJures
+KEY IS fj_cle
+END-READ 
+IF jureCR = 0
+    DISPLAY 'Ce juré existe déjà.'
+ELSE
+    CLOSE FJures
+    OPEN I-O FJures
+    DISPLAY 'CR : ', jureCR
+    *>Vérification de l'existence du fichier
+    IF jureCR <> 0
+       CLOSE FJures
+       OPEN OUTPUT FJures
+    END-IF
+    DISPLAY 'CR : ', jureCR
+    DISPLAY 'Saisir le numéro de département :'
+    ACCEPT fj_departement
+    DISPLAY 'Saisir l''adresse :'
+    ACCEPT fj_adresse
+    WRITE jureTampon
+       INVALID KEY
+           DISPLAY "zut."
+       NOT INVALID KEY
+           DISPLAY "Ajouté !"
+    END-WRITE
+END-IF
 
+CLOSE FJures.
 
-ModifierJure..
+ModifierJure.
+OPEN INPUT FJures
+DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
+DISPLAY '  Nom :'
+ACCEPT fj_nom
+DISPLAY '  Prénom :'
+ACCEPT fj_prenom
 
+READ FJures
+KEY IS fj_cle
+END-READ
+IF jureCR <> 0
+       DISPLAY 'Ce juré n''existe pas'
+ELSE
+    CLOSE FJures
+    OPEN I-O FJures
+    DISPLAY ' '
+    DISPLAY 'Informations actuelles :'
+    DISPLAY '  Nom : ', fj_nom
+    DISPLAY '  Prénom : ', fj_prenom
+    DISPLAY '  Adresse : ', fj_adresse
+    DISPLAY '  Département : ', fj_departement
 
-SupprimerJure..
+    DISPLAY 'Saisir les informations à modifier :'
+    DISPLAY '  Adresse :'
+    ACCEPT fj_adresse
+    DISPLAY '  Département :'
+    ACCEPT fj_departement
+    REWRITE jureTampon END-REWRITE
+    IF jureCR = 0
+       DISPLAY 'Informations enregistrées !'
+    ELSE
+       DISPLAY 'Erreur d''enregistrement (',jureCR,')'
+END-IF
+CLOSE FJures.
+*> Alvin
 
+SupprimerJure.
+OPEN I-O FJures
+
+DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
+DISPLAY '  Nom :'
+ACCEPT fj_nom
+DISPLAY '  Prénom :'
+ACCEPT fj_prenom
+
+DELETE FJures RECORD
+INVALID KEY
+       DISPLAY 'Ce juré n''existe pas.'
+NOT INVALID KEY
+       DISPLAY 'Juré supprimé !'
+END-DELETE
+CLOSE FJures.
+*> Alvin
+
+RechercherJuresNonConvoques.
+*>Lire Jurés. Pour chaque juré
+.
+*> Alvin
 
 ConsulterConvocations..
-
+*> Oriane
 
 AjouterConvocation..
-
+*> Oriane
 
 ModifierConvocation..
-
+*> Oriane
 
 SupprimerConvocation..
-
+*> Oriane
 
 RechercherConvosNonValides..
-
+*> Oriane
 
 ConsulterSeances..
-
+*> Mathieu
 
 AjouterSeance..
-
+*> Mathieu
 
 ModifierSeance..
-
+*> Mathieu
 
 SupprimerSeance..
-
+*> Mathieu
 
 RechercherSeancesJureVenir..
-
+*> Mathieu
 
 ConsulterAffaires..
-
+*> Mathieu
 
 AjouterAffaire..
-
+*> Mathieu
 
 ModifierAffaire..
-
+*> Mathieu
 
 SupprimerAffaire..
-
+*> Mathieu
 
 ConsulterSalles..
-
+*> Oriane
 
 AjouterSalle..
-
+*> Oriane
 
 ModifierSalle..
-
+*> Oriane
 
 SupprimerSalle..
-
+*> Oriane
 
 RechercherSallesLibres..
-
+*> Oriane
