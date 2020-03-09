@@ -16,7 +16,8 @@ SELECT FConvocations ASSIGN TO "convocations.dat"
     ORGANIZATION INDEXED
     ACCESS IS DYNAMIC
     FILE STATUS IS convoCR
-    RECORD KEY IS fc_cle.
+    RECORD KEY IS fc_cle
+    ALTERNATE RECORD KEY IS fc_jure WITH DUPLICATES.
 
 SELECT FSeances ASSIGN TO "seances.dat"
     ORGANIZATION INDEXED
@@ -78,7 +79,7 @@ FD FSalles.
 01 salleTampon.
     02 fsa_numSalle PIC 9(2).
     02 fsa_numTribunal PIC 9(3).
-    02 fse_capacite PIC 9(3).
+    02 fsa_capacite PIC 9(3).
 
 WORKING-STORAGE SECTION.
 77 jureCR PIC 9(2).
@@ -95,10 +96,17 @@ WORKING-STORAGE SECTION.
 77 WFin PIC 9(1).
 77 WTrouve PIC 9(1).
 
-77 SYS-DATE6.
-    78 SYS-AA PIC 99.
-    78 SYS-MM PIC 99.
-    78 SYS-JJ PIC 99.
+01 timestampAjd.
+    02 dateAjd.
+       03 anAjd PIC 9(4).
+       03 moisAjd PIC 9(2).
+       03 jourAjd PIC 9(2).
+    02 heureAjd.
+       03 heureAjd PIC 9(2).
+       03 minuteAjd PIC 9(2).
+       03 secondeAjd PIC 9(2).
+       03 milliAjd PIC 9(2).
+
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -375,8 +383,10 @@ IF jureCR = 0
     START FConvocations KEY EQUALS fc_jure
     INVALID KEY 
         DISPLAY 'Pas de convocation pour ce juré'
+        DISPLAY 'CR invalid key convo : ', convoCR
     NOT INVALID KEY
        OPEN INPUT FSeances
+       DISPLAY 'CR seance :', seanceCR
        IF seanceCR <> 0
            DISPLAY 'Aucune séance n''existe.'
        ELSE
@@ -384,6 +394,7 @@ IF jureCR = 0
                READ FConvocations NEXT
                AT END MOVE 1 TO WFin
                NOT AT END
+                   DISPLAY 'prout'
                    IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
                        MOVE 1 TO WFin
                    ELSE
@@ -392,8 +403,8 @@ IF jureCR = 0
                        IF seanceCR <> 0
                            DISPLAY 'La séance n''existe pas'
                        ELSE
-                           ACCEPT SYS-DATE6 FROM DATE.
-                           IF fse_date_jj >= SYS-JJ AND fse_date_mm >= SYS-MM AND fse_date_aa >= SYS-AA
+                           MOVE FUNCTION CURRENT-DATE TO timestampAjd
+                           IF fse_date_jj >= jourAjd AND fse_date_mm >= moisAjd AND fse_date_aa >= anAjd
                                DELETE FConvocations RECORD
                                NOT INVALID KEY
                                       DISPLAY 'convo supprimée !'
@@ -405,6 +416,7 @@ IF jureCR = 0
            END-PERFORM
        END-IF
     END-START
+    CLOSE FConvocations
 ELSE
     DISPLAY 'Ce juré n''existe pas.'
 END-IF
@@ -421,10 +433,41 @@ RechercherJuresNonConvoques.
 .
 *> Alvin
 
-ConsulterConvocations..
+ConsulterConvocations.
+OPEN INPUT FConvocations
+IF convoCR <> 0
+    DISPLAY 'Fichier vide'
+    DISPLAY 'CR : ', convoCR
+ELSE
+    MOVE 0 TO WFin
+    PERFORM WITH TEST AFTER UNTIL WFin = 1
+        READ FConvocations NEXT
+        AT END MOVE 1 TO WFin
+        NOT AT END
+            DISPLAY 'CR : ', convoCR
+            DISPLAY fc_nom
+        END-READ
+    END-PERFORM
+END-IF
+CLOSE FConvocations.
 *> Oriane
 
-AjouterConvocation..
+AjouterConvocation.
+DISPLAY 'num seance'
+ACCEPT fc_numSeance
+DISPLAY 'nom jure'
+ACCEPT fc_nom
+DISPLAY 'prenom jure'
+ACCEPT fc_prenom
+DISPLAY 'valide'
+ACCEPT fc_valide
+OPEN I-O FConvocations
+IF convoCR <> 0
+CLOSE FConvocations
+OPEN OUTPUT FConvocations
+END-IF
+WRITE convoTampon END-WRITE
+CLOSE FConvocations.
 *> Oriane
 
 ModifierConvocation..
@@ -439,7 +482,27 @@ RechercherConvosNonValides..
 ConsulterSeances..
 *> Mathieu
 
-AjouterSeance..
+AjouterSeance.
+DISPLAY 'num seance'
+ACCEPT fse_numSeance
+DISPLAY 'nom juge'
+ACCEPT fse_juge
+MOVE 0 TO fse_date_aa
+MOVE 0 TO fse_date_mm
+MOVE 0 TO fse_date_jj
+MOVE 0 TO fse_numSalle
+MOVE 0 TO fse_refAffaire
+MOVE 'A' TO fse_typeTribunal
+OPEN I-O FSeances
+IF seanceCR <> 0
+CLOSE FSeances
+OPEN OUTPUT FSeances
+END-IF
+WRITE seanceTampon END-WRITE
+IF seanceCR = 0
+    DISPLAY 'séance ajoutée'
+CLOSE FSeances.
+
 *> Mathieu
 
 ModifierSeance..
