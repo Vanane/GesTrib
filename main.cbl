@@ -74,7 +74,7 @@ FD FSalles.
 01 salleTampon.
     02 fsa_numSalle PIC 9(2).
     02 fsa_numTribunal PIC 9(3).
-    02 fse_capacite PIC 9(3).
+    02 fsa_capacite PIC 9(3).
 
 WORKING-STORAGE SECTION.
 77 jureCR PIC 9(2).
@@ -87,6 +87,13 @@ WORKING-STORAGE SECTION.
 77 choixMenuSec PIC 9(2).
 77 nomJure PIC A(25).
 77 prenomJure PIC A(25).
+77 derniereSalle PIC 9(2).
+77 WFin PIC 9(1).
+77 WTrouve PIC 9(1).
+
+77 numS PIC 9(2).
+77 numT PIC 9(3).
+77 capa PIC 9(3).
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -307,14 +314,111 @@ ModifierAffaire..
 SupprimerAffaire..
 
 
-ConsulterSalles..
+ConsulterSalles.
+MOVE 0 TO WFin
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           DISPLAY 'Numéro de salle : 'fsa_numSalle
+           DISPLAY 'Numéro de tribunal : 'fsa_numTribunal
+           DISPLAY 'Capacité de la salle : 'fsa_capacite
+           DISPLAY ' '
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles.
+
+AjouterSalle.
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY 'Numero salle'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal'
+ACCEPT numT
+DISPLAY 'Saisir la capacité de la nouvelle salle'
+ACCEPT capa
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       CLOSE FSalles
+       OPEN OUTPUT FSalles
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve <> 1
+    OPEN Extend FSalles
+    MOVE capa TO fsa_capacite
+    MOVE numS TO fsa_numSalle
+    MOVE numT TO fsa_numTribunal
+    Write salleTampon END-Write
+    DISPLAY 'Salle créée'
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle déjà existante'
+END-IF.
 
 
-AjouterSalle..
 
+ModifierSalle.
 
-ModifierSalle..
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY ' Saisir le numéro de la salle à modifier'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
+ACCEPT numT
 
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'       
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve = 1
+    OPEN Extend FSalles
+       DISPLAY 'Informations actuelles de la salle'
+       DISPLAY 'capacité : ' fsa_capacite
+       DISPLAY '****'
+
+       DISPLAY 'Saisir la capacité de la nouvelle salle'
+       ACCEPT fsa_capacite
+
+    REWrite salleTampon END-REWrite
+    IF salleCR = 0
+       DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
+    ELSE
+       DISPLAY 'Erreur lors de la modification'
+    END-IF
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle non trouvée'
+END-IF.
 
 SupprimerSalle..
 
