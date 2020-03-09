@@ -60,7 +60,11 @@ FD FSeances.
     02 fse_numSeance PIC 9(2).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
-    02 fse_date PIC X(10).
+    02 fse_date.
+       03 fse_date_aa PIC 99.
+       03 fse_date_mm PIC 99.
+       03 fse_date_jj PIC 99.
+       
     02 fse_refAffaire PIC A(9).
     02 fse_numSalle PIC 9(2).
     
@@ -89,6 +93,12 @@ WORKING-STORAGE SECTION.
 77 prenomJure PIC A(25).
 
 77 WFin PIC 9(1).
+77 WTrouve PIC 9(1).
+
+77 SYS-DATE6.
+    78 SYS-AA PIC 99.
+    78 SYS-MM PIC 99.
+    78 SYS-JJ PIC 99.
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -347,6 +357,7 @@ CLOSE FJures.
 *> Alvin
 
 SupprimerJure.
+MOVE 0 TO WFin
 OPEN I-O FJures
 
 DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
@@ -355,9 +366,50 @@ ACCEPT fj_nom
 DISPLAY '  Prénom :'
 ACCEPT fj_prenom
 
+READ FJures KEY IS fj_cle END-READ
+IF jureCR = 0
+    MOVE fj_nom TO fc_nom
+    MOVE fj_prenom TO fc_prenom
+
+    OPEN I-O FConvocations
+    START FConvocations KEY EQUALS fc_jure
+    INVALID KEY 
+        DISPLAY 'Pas de convocation pour ce juré'
+    NOT INVALID KEY
+       OPEN INPUT FSeances
+       IF seanceCR <> 0
+           DISPLAY 'Aucune séance n''existe.'
+       ELSE
+           PERFORM WITH TEST AFTER UNTIL WFin = 1
+               READ FConvocations NEXT
+               AT END MOVE 1 TO WFin
+               NOT AT END
+                   IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
+                       MOVE 1 TO WFin
+                   ELSE
+                       MOVE fc_numSeance TO fse_numSeance
+                       READ FSeances KEY IS fse_numSeance END-READ
+                       IF seanceCR <> 0
+                           DISPLAY 'La séance n''existe pas'
+                       ELSE
+                           ACCEPT SYS-DATE6 FROM DATE.
+                           IF fse_date_jj >= SYS-JJ AND fse_date_mm >= SYS-MM AND fse_date_aa >= SYS-AA
+                               DELETE FConvocations RECORD
+                               NOT INVALID KEY
+                                      DISPLAY 'convo supprimée !'
+                               END-DELETE
+                           END-IF
+                       END-IF
+                   END-IF
+               END-READ
+           END-PERFORM
+       END-IF
+    END-START
+ELSE
+    DISPLAY 'Ce juré n''existe pas.'
+END-IF
+
 DELETE FJures RECORD
-INVALID KEY
-       DISPLAY 'Ce juré n''existe pas.'
 NOT INVALID KEY
        DISPLAY 'Juré supprimé !'
 END-DELETE
