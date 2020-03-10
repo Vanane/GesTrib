@@ -61,10 +61,16 @@ FD FSeances.
     02 fse_numSeance PIC 9(2).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
-    02 fse_date.
-       03 fse_date_aa PIC 99.
-       03 fse_date_mm PIC 99.
-       03 fse_date_jj PIC 99.
+    02 fse_timestamp.
+       03 fse_date.
+           04 fse_date_an PIC 9(4).
+           04 fse_date_mois PIC 9(2).
+           04 fse_date_jour PIC 9(2).
+       03 fse_heure.
+           04 fse_heure_heure PIC 9(2).
+           04 fse_heure_minute PIC 9(2).
+           04 fse_heure_seconde PIC 9(2).
+           04 fse_heure_milli PIC 9(2).
        
     02 fse_refAffaire PIC A(9).
     02 fse_numSalle PIC 9(2).
@@ -401,14 +407,18 @@ IF jureCR = 0
                        MOVE fc_numSeance TO fse_numSeance
                        READ FSeances KEY IS fse_numSeance END-READ
                        IF seanceCR <> 0
-                           DISPLAY 'La séance n''existe pas'
+                           DISPLAY 'La séance n°', fse_numSeance, ' n''existe pas'
                        ELSE
+                           DISPLAY 'La séance n°', fse_numSeance, ' existe !'
                            MOVE FUNCTION CURRENT-DATE TO timestampAjd
-                           IF fse_date_jj >= jourAjd AND fse_date_mm >= moisAjd AND fse_date_aa >= anAjd
+                           DISPLAY 'lecture de la date...'
+                           IF fse_date_jour <= jourAjd AND fse_date_mois <= moisAjd AND fse_date_an <= anAjd
                                DELETE FConvocations RECORD
                                NOT INVALID KEY
                                       DISPLAY 'convo supprimée !'
                                END-DELETE
+                            ELSE
+                               DISPLAY 'convo gardée'
                            END-IF
                        END-IF
                    END-IF
@@ -417,6 +427,7 @@ IF jureCR = 0
        END-IF
     END-START
     CLOSE FConvocations
+    CLOSE FSeances
 ELSE
     DISPLAY 'Ce juré n''existe pas.'
 END-IF
@@ -487,11 +498,14 @@ DISPLAY 'num seance'
 ACCEPT fse_numSeance
 DISPLAY 'nom juge'
 ACCEPT fse_juge
-MOVE 0 TO fse_date_aa
-MOVE 0 TO fse_date_mm
-MOVE 0 TO fse_date_jj
-MOVE 0 TO fse_numSalle
-MOVE 0 TO fse_refAffaire
+MOVE ZERO TO fse_date_an
+MOVE ZERO TO fse_date_mois
+MOVE ZERO TO fse_date_jour
+MOVE ZERO TO fse_heure_heure
+MOVE ZERO TO fse_heure_minute
+MOVE ZERO TO fse_heure_seconde
+MOVE ZERO TO fse_heure_milli
+MOVE ZERO TO fse_numSalle
 MOVE 'A' TO fse_typeTribunal
 OPEN I-O FSeances
 IF seanceCR <> 0
@@ -501,6 +515,7 @@ END-IF
 WRITE seanceTampon END-WRITE
 IF seanceCR = 0
     DISPLAY 'séance ajoutée'
+END-IF
 CLOSE FSeances.
 
 *> Mathieu
