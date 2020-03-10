@@ -60,7 +60,7 @@ FD FSeances.
     02 fse_numSeance PIC 9(2).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
-    02 fse_date PIC X(10).
+    02 fse_date PIC 9(8).
     02 fse_refAffaire PIC A(9).
     02 fse_numSalle PIC 9(2).
     
@@ -96,9 +96,10 @@ WORKING-STORAGE SECTION.
 77 wCr PIC 9(2).
 77 wNse PIC 9(2).
 77 wClasse PIC 9(1).
+77 wDate PIC 9(8).
 
 PROCEDURE DIVISION.
-PERFORM MenuPrincipal.
+PERFORM MenuPrincipal
 STOP RUN.
 
 MenuPrincipal.
@@ -324,6 +325,10 @@ AjouterSeance.
     MOVE 0 TO wRep
     PERFORM RechercheDerniereSeance
     OPEN I-O FSeances
+    
+    ACCEPT wDate FROM DATE YYYYMMDD
+    COMPUTE wDate = FUNCTION INTEGER-OF-DATE(wDate) + 7
+
     PERFORM WITH TEST AFTER UNTIL wRep = 0
         ADD 1 TO wNse
         MOVE wNse TO fse_numSeance
@@ -332,8 +337,16 @@ AjouterSeance.
         ACCEPT fse_typeTribunal
         DISPLAY 'Nom du juge: '
         ACCEPT fse_juge
-        DISPLAY 'Date de la séance: '
+
+        DISPLAY 'Date de la séance (YYYYMMDD): '
         ACCEPT fse_date
+        COMPUTE fse_date = FUNCTION INTEGER-OF-DATE(fse_date)
+        IF fse_date >= wDate THEN
+            DISPLAY 'Date Valide'
+        ELSE
+            DISPLAY 'Date Invalide'
+        END-IF
+
         DISPLAY 'Numéro de la salle: '
         ACCEPT fse_numSalle
         PERFORM RechercheAffaire 
@@ -547,6 +560,7 @@ SupprimerSalle..
 
 
 RechercherSallesLibres..
+
 
 
 
