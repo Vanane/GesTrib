@@ -318,13 +318,15 @@ AjouterSeance.
     OPEN I-O FSeances
     IF seanceCR = 35 THEN
       OPEN OUTPUT FSeances
-      CLOSE FSeances
-      OPEN I-O FSeances
     END-IF
+    CLOSE FSeances
     MOVE 0 TO wRep
+    PERFORM RechercheDerniereSeance
+    OPEN I-O FSeances
     PERFORM WITH TEST AFTER UNTIL wRep = 0
-        DISPLAY 'Numéro de la Séance: '
-        ACCEPT fse_numSeance
+        ADD 1 TO wNse
+        MOVE wNse TO fse_numSeance
+        DISPLAY 'Séance n°', fse_numSeance
         DISPLAY 'Type de tribunal: '
         ACCEPT fse_typeTribunal
         DISPLAY 'Nom du juge: '
@@ -407,7 +409,7 @@ SupprimerSeance.
 
 RechercheDerniereSeance.
     OPEN I-O FSeances
-    IF fse_numSeance = 00 THEN
+    IF seanceCR = 00 THEN
         MOVE 0 TO wFin
         MOVE 0 TO wNse
         PERFORM WITH TEST AFTER UNTIL wFin = 1
@@ -426,9 +428,8 @@ RechercheDerniereSeance.
     END-IF
 .
 
-
-RechercherSeancesJureVenir..
-
+RechercherSeancesJureVenir.
+.
 
 ConsulterAffaires.
     OPEN INPUT FAffaires
