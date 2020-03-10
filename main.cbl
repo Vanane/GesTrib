@@ -36,6 +36,13 @@ SELECT FSalles ASSIGN TO "salles.dat"
     ACCESS IS SEQUENTIAL
     FILE STATUS IS salleCR.
 
+
+SELECT FSallesTemp ASSIGN TO "sallesTemp.dat"
+    ORGANIZATION SEQUENTIAL
+    ACCESS IS SEQUENTIAL
+    FILE STATUS IS salleTempCR.
+
+
 DATA DIVISION.
 FILE SECTION.
 FD FJures.
@@ -76,12 +83,19 @@ FD FSalles.
     02 fsa_numTribunal PIC 9(3).
     02 fsa_capacite PIC 9(3).
 
+FD FSallesTemp.
+01 salleTamponTemp.
+    02 fsa_numSalleTemp PIC 9(2).
+    02 fsa_numTribunalTemp PIC 9(3).
+    02 fsa_capaciteTemp PIC 9(3).
+    
 WORKING-STORAGE SECTION.
 77 jureCR PIC 9(2).
 77 convoCR PIC 9(2).
 77 seanceCR PIC 9(2).
 77 affaireCR PIC 9(2).
 77 salleCR PIC 9(2).
+77 salleTempCR PIC 9(2).
 
 77 choixMenu PIC 9(2).
 77 choixMenuSec PIC 9(2).
@@ -94,6 +108,7 @@ WORKING-STORAGE SECTION.
 77 numS PIC 9(2).
 77 numT PIC 9(3).
 77 capa PIC 9(3).
+77 rep PIC 9(1).
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -408,6 +423,7 @@ IF WTrouve = 1
 
        DISPLAY 'Saisir la capacité de la nouvelle salle'
        ACCEPT fsa_capacite
+       
 
     REWrite salleTampon END-REWrite
     IF salleCR = 0
@@ -420,7 +436,80 @@ ELSE
     DISPLAY 'Salle non trouvée'
 END-IF.
 
-SupprimerSalle..
+SupprimerSalle.
+
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY ' Saisir le numéro de la salle à supprimer'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
+ACCEPT numT
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'       
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve = 1
+    OPEN Extend FSalles
+       DISPLAY ' ** Informations actuelles de la salle **'
+       DISPLAY 'NumSalle : 'fsa_numSalle
+       DISPLAY 'NumTribunal : 'fsa_numTribunal
+       DISPLAY 'capacité : ' fsa_capacite
+       DISPLAY '****'
+
+       DISPLAY 'Souhaitez vous vraiment supprimer cette salle ? 1/0'
+       ACCEPT rep
+       
+       IF rep = 1
+
+            DISPLAY '** Debug 01 ** '
+            OPEN OUTPUT FSallesTemp
+            MOVE 0 to WFin
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                    display "** Debug 02**"
+                    READ FSalles
+                    AT END MOVE 1 TO WFin
+                    NOT AT END
+                    If fsa_numSalle <> numS OR fsa_numTribunal <> numT
+                        Write salleTampon END-Write
+                    END-IF
+                    END-READ
+               END-PERFORM
+
+               MOVE 0 to WFin 
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                  READ FSallesTemp
+                  AT END MOVE 1 TO WFin
+                  NOT AT END 
+                  Write salleTamponTemp END-Write
+                  END-READ
+               END-PERFORM
+
+
+            DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
+            CLOSE FSallesTemp
+
+       ELSE           
+       DISPLAY 'Suppression annulée'
+       END-IF
+   
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle non trouvée'
+END-IF.
+
 
 
 RechercherSallesLibres..
