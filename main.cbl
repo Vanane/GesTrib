@@ -346,11 +346,55 @@ AjouterSeance.
     CLOSE FSeances
 .
 
+ModifierSeance.
+    OPEN I-O FSeances
+    DISPLAY 'Identifiant de la séance: '
+    ACCEPT fse_numSeance
+    READ FSeances
+    INVAID KEY
+        DISPLAY 'Séance Inéxistante'
+    NOT INVAID KEY
+        DISPLAY 'Numéro de la salle: '
+        ACCEPT fse_numSalle
+        DISPLAY 'Nom du Juge: '
+        ACCEPT fse_juge
+        DISPLAY 'Nouvelle Date: '
+        ACCEPT fse_date
+        REWRITE seanceTampon
+            INVAID KEY 
+                DISPLAY 'Erreur d ecriture'
+            NOT INVALID KEY
+                DISPLAY 'La séance a été modifié'
+        END-REWRITE
+    END-READ
+    CLOSE FSeances
+.
 
-ModifierSeance..
 
-
-SupprimerSeance..
+SupprimerSeance.
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        DISPLAY 'Identifiant de la Séance'
+        ACCEPT fse_numSeance
+        READ fse_numSeance
+        INVALID KEY
+            DISPLAY 'Séance Inéxistante'
+        NOT INVALID KEY
+            DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1 ou 0'
+            PERFORM WITH TEST AFTER UNTIL wRep = 0 OR wRep = 1
+                ACCEPT wRep
+            END-PERFORM
+            IF wRep = 1 THEN
+                DELETE seanceTampon RECORD
+                DISPLAY 'Suppression effectuée'
+            ELSE
+                DISPLAY 'Suppression Annulée'
+            END-IF
+            CLOSE FSeances
+    ELSE
+        DISPLAY 'Erreur d ouverture de FSeances'
+    END-IF
+.
 
 
 RechercherSeancesJureVenir..
