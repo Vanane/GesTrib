@@ -61,17 +61,7 @@ FD FSeances.
     02 fse_numSeance PIC 9(2).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
-    02 fse_timestamp.
-       03 fse_date.
-           04 fse_date_an PIC 9(4).
-           04 fse_date_mois PIC 9(2).
-           04 fse_date_jour PIC 9(2).
-       03 fse_heure.
-           04 fse_heure_heure PIC 9(2).
-           04 fse_heure_minute PIC 9(2).
-           04 fse_heure_seconde PIC 9(2).
-           04 fse_heure_milli PIC 9(2).
-       
+    02 fse_date PIC 9(8).       
     02 fse_refAffaire PIC A(9).
     02 fse_numSalle PIC 9(2).
     
@@ -102,17 +92,7 @@ WORKING-STORAGE SECTION.
 77 WFin PIC 9(1).
 77 WTrouve PIC 9(1).
 
-01 timestampAjd.
-    02 dateAjd.
-       03 anAjd PIC 9(4).
-       03 moisAjd PIC 9(2).
-       03 jourAjd PIC 9(2).
-    02 heureAjd.
-       03 heureAjd PIC 9(2).
-       03 minuteAjd PIC 9(2).
-       03 secondeAjd PIC 9(2).
-       03 milliAjd PIC 9(2).
-
+01 dateAjd PIC 9(8).
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -412,7 +392,7 @@ IF jureCR = 0
                            DISPLAY 'La séance n°', fse_numSeance, ' existe !'
                            MOVE FUNCTION CURRENT-DATE TO timestampAjd
                            DISPLAY 'lecture de la date...'
-                           IF fse_date_jour <= jourAjd AND fse_date_mois <= moisAjd AND fse_date_an <= anAjd
+                           IF fse_date <= dateAjd
                                DELETE FConvocations RECORD
                                NOT INVALID KEY
                                       DISPLAY 'convo supprimée !'
@@ -498,13 +478,7 @@ DISPLAY 'num seance'
 ACCEPT fse_numSeance
 DISPLAY 'nom juge'
 ACCEPT fse_juge
-MOVE ZERO TO fse_date_an
-MOVE ZERO TO fse_date_mois
-MOVE ZERO TO fse_date_jour
-MOVE ZERO TO fse_heure_heure
-MOVE ZERO TO fse_heure_minute
-MOVE ZERO TO fse_heure_seconde
-MOVE ZERO TO fse_heure_milli
+MOVE ZERO TO fse_date
 MOVE ZERO TO fse_numSalle
 MOVE 'A' TO fse_typeTribunal
 OPEN I-O FSeances
