@@ -95,6 +95,7 @@ WORKING-STORAGE SECTION.
 77 wOut PIC 9(1).
 77 wCr PIC 9(2).
 77 wNse PIC 9(2).
+77 wClasse PIC 9(1).
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -336,15 +337,14 @@ AjouterSeance.
         DISPLAY 'Numéro de la salle: '
         ACCEPT fse_numSalle
         PERFORM RechercheAffaire 
-        DISPLAY 'output: ', wOut
-        IF wOut = 1 THEN
+        IF wOut = 1 AND wClasse = 0 THEN
             MOVE wRef TO fse_refAffaire
             WRITE seanceTampon END-WRITE
             IF seanceCR NOT = 00 THEN
                 DISPLAY 'Erreur d ecriture'
             END-IF
         ELSE 
-            DISPLAY 'Affaire Inconnue'
+            DISPLAY 'Affaire Inconnue Ou déjà Classée'
         END-IF
         PERFORM WITH TEST AFTER UNTIL wRep = 0 OR wRep = 1
             DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
@@ -508,6 +508,7 @@ RechercheAffaire.
     MOVE 0 to wFin
     MOVE 0 to wTrouve
     MOVE 0 TO wCr
+    MOVE 0 TO wClasse
     MOVE '00000000' TO wRef
     DISPLAY 'Référence de l Affaire: '
     ACCEPT wRef
@@ -524,6 +525,7 @@ RechercheAffaire.
             IF wRef = fa_refAffaire THEN
                 MOVE 1 TO wTrouve
                 MOVE 1 TO wOut
+                MOVE fa_classee TO wClasse
             END-IF
     END-PERFORM
     CLOSE FAffaires
