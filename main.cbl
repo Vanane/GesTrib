@@ -369,18 +369,15 @@ IF jureCR = 0
     START FConvocations KEY EQUALS fc_jure
     INVALID KEY 
         DISPLAY 'Pas de convocation pour ce juré'
-        DISPLAY 'CR invalid key convo : ', convoCR
     NOT INVALID KEY
        OPEN INPUT FSeances
-       DISPLAY 'CR seance :', seanceCR
        IF seanceCR <> 0
            DISPLAY 'Aucune séance n''existe.'
        ELSE
            PERFORM WITH TEST AFTER UNTIL WFin = 1
                READ FConvocations NEXT
-               AT END MOVE 1 TO WFin
+               *>AT END MOVE 1 TO WFin
                NOT AT END
-                   DISPLAY 'prout'
                    IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
                        MOVE 1 TO WFin
                    ELSE
@@ -390,7 +387,7 @@ IF jureCR = 0
                            DISPLAY 'La séance n°', fse_numSeance, ' n''existe pas'
                        ELSE
                            DISPLAY 'La séance n°', fse_numSeance, ' existe !'
-                           MOVE FUNCTION CURRENT-DATE TO timestampAjd
+                           ACCEPT dateAjd FROM DATE YYYYMMDD
                            DISPLAY 'lecture de la date...'
                            IF fse_date <= dateAjd
                                DELETE FConvocations RECORD
@@ -408,19 +405,23 @@ IF jureCR = 0
     END-START
     CLOSE FConvocations
     CLOSE FSeances
-ELSE
+
+    DELETE FJures RECORD
+    NOT INVALID KEY
+       DISPLAY 'Juré supprimé !'
+    END-DELETE
+ELSE *> Si jureCR n'est pas 0 après lecture sur nom prenom
     DISPLAY 'Ce juré n''existe pas.'
 END-IF
-
-DELETE FJures RECORD
-NOT INVALID KEY
-       DISPLAY 'Juré supprimé !'
-END-DELETE
 CLOSE FJures.
 *> Alvin
 
 RechercherJuresNonConvoques.
-*>Lire Jurés. Pour chaque juré
+*>Lire Jurés. Pour chaque juré,
+       *> LireZone ses convocations jusqu'à la fin ou Valide = 0.
+       *> Si convo avec valide = 0 trouvée, afficher juré et passer au suivant.
+
+
 .
 *> Alvin
 
@@ -436,7 +437,7 @@ ELSE
         AT END MOVE 1 TO WFin
         NOT AT END
             DISPLAY 'CR : ', convoCR
-            DISPLAY fc_nom
+            DISPLAY fc_nom, fc_prenom, fc_numSeance
         END-READ
     END-PERFORM
 END-IF
