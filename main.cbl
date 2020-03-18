@@ -486,6 +486,7 @@ Accept numS
 
 Display ' Verification que la séance existe'
 OPEN INPUT FSeances
+
 READ FSeances KEY fse_numSeance
 IF seanceCR <> 0
     CLOSE FSeances
@@ -499,6 +500,7 @@ ELSE
     accept prenomJure
 
     OPEN INPUT FJures
+
     READ FJures KEY fc_jure
     IF jureCR <> 0
        CLOSE FJures
@@ -959,5 +961,4 @@ ELSE
 END-IF.
 
 RechercherSallesLibres..
-
 
