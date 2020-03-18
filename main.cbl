@@ -61,10 +61,10 @@ FD FSeances.
     02 fse_numSeance PIC 9(2).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
-    02 fse_date PIC 9(8).       
+    02 fse_date PIC 9(8).
     02 fse_refAffaire PIC A(9).
     02 fse_numSalle PIC 9(2).
-    
+
 FD FAffaires.
 01 affaireTampon.
     02 fa_refAffaire PIC A(9).
@@ -89,16 +89,26 @@ WORKING-STORAGE SECTION.
 77 nomJure PIC A(25).
 77 prenomJure PIC A(25).
 
+
+77 wFin PIC 9(1).
+77 wRep pic 9(1).
+77 wTrouve PIC 9(1).
+77 wRef PIC A(9).
+77 wOut PIC 9(1).
+77 wCr PIC 9(2).
+77 wNse PIC 9(2).
+77 wClasse PIC 9(1).
+77 wDate PIC 9(8).
+
 77 WFin PIC 9(1).
 77 WTrouve PIC 9(1).
 
 01 dateAjd PIC 9(8).
 
 PROCEDURE DIVISION.
-PERFORM MenuPrincipal.
+PERFORM MenuPrincipal
 STOP RUN.
 
-MenuPrincipal.
 DISPLAY '----------------'
 DISPLAY 'Menu Principal:'
 DISPLAY '  1 : Login Juré'
@@ -123,6 +133,17 @@ EVALUATE choixMenu
     WHEN 1 PERFORM ConsulterSeances
 END-EVALUATE.
 
+MenuJure.
+    DISPLAY '----------------'
+    DISPLAY 'Menu Juré:'
+    DISPLAY '  1 : Consulter les prochaines séances'
+    DISPLAY '----------------'
+    DISPLAY '0 : Quitter'  
+    ACCEPT choixMenu
+    EVALUATE choixMenu
+        WHEN 1 PERFORM ConsulterSeances
+    END-EVALUATE
+.
 
 MenuAdmin.
 PERFORM WITH TEST AFTER UNTIL choixMenu = 0
@@ -471,62 +492,247 @@ SupprimerConvocation..
 RechercherConvosNonValides..
 *> Oriane
 
-ConsulterSeances..
-*> Mathieu
+ConsulterSeances.
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        MOVE 0 TO wFin
+        DISPLAY ' '
+        PERFORM WITH TEST AFTER UNTIL wFin = 1
+            READ FSeances NEXT
+            AT END 
+                MOVE 1 TO wFin
+            NOT AT END
+                DISPLAY 'Numéro: ', fse_numSeance
+                DISPLAY 'Type de tribunal:', fse_typeTribunal
+                DISPLAY 'Nom du Juge: ', fse_juge
+                DISPLAY 'Date de la séance: ', fse_date
+                DISPLAY 'Salle n°', fse_numSalle
+                DISPLAY 'Référence de l affaire: ', fse_refAffaire
+                DISPLAY ' '
+        END-PERFORM
+        CLOSE FSeances
+    ELSE
+        DISPLAY 'Erreur d ouverture de FSeances'
+    END-IF.
 
 AjouterSeance.
-DISPLAY 'num seance'
-ACCEPT fse_numSeance
-DISPLAY 'nom juge'
-ACCEPT fse_juge
-MOVE ZERO TO fse_date
-MOVE ZERO TO fse_numSalle
-MOVE 'A' TO fse_typeTribunal
-OPEN I-O FSeances
-IF seanceCR <> 0
-CLOSE FSeances
-OPEN OUTPUT FSeances
-END-IF
-WRITE seanceTampon END-WRITE
-IF seanceCR = 0
-    DISPLAY 'séance ajoutée'
-END-IF
-CLOSE FSeances.
+    OPEN I-O FSeances
+    IF seanceCR = 35 THEN
+      OPEN OUTPUT FSeances
+    END-IF
+    CLOSE FSeances
+    MOVE 0 TO wRep
+    PERFORM RechercheDerniereSeance
+    OPEN I-O FSeances
+    
+    ACCEPT wDate FROM DATE YYYYMMDD
+    COMPUTE wDate = FUNCTION INTEGER-OF-DATE(wDate) + 7
 
-*> Mathieu
+    PERFORM WITH TEST AFTER UNTIL wRep = 0
+        ADD 1 TO wNse
+        MOVE wNse TO fse_numSeance
+        DISPLAY 'Séance n°', fse_numSeance
+        DISPLAY 'Type de tribunal: '
+        ACCEPT fse_typeTribunal
+        DISPLAY 'Nom du juge: '
+        ACCEPT fse_juge
 
-ModifierSeance..
-*> Mathieu
+        DISPLAY 'Date de la séance (YYYYMMDD): '
+        ACCEPT fse_date
+        COMPUTE fse_date = FUNCTION INTEGER-OF-DATE(fse_date)
+        IF fse_date >= wDate THEN
+            DISPLAY 'Date Valide'
+        ELSE
+            DISPLAY 'Date Invalide'
+        END-IF
 
-SupprimerSeance..
-*> Mathieu
+        DISPLAY 'Numéro de la salle: '
+        ACCEPT fse_numSalle
+        PERFORM RechercheAffaire 
+        IF wOut = 1 AND wClasse = 0 THEN
+            MOVE wRef TO fse_refAffaire
+            WRITE seanceTampon END-WRITE
+            IF seanceCR NOT = 00 THEN
+                DISPLAY 'Erreur d ecriture'
+            END-IF
+        ELSE 
+            DISPLAY 'Affaire Inconnue Ou déjà Classée'
+        END-IF
+        PERFORM WITH TEST AFTER UNTIL wRep = 0 OR wRep = 1
+            DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+            ACCEPT wRep 
+        END-PERFORM
+    END-PERFORM
+    CLOSE FSeances.
 
-RechercherSeancesJureVenir..
-*> Mathieu
 
-ConsulterAffaires..
-*> Mathieu
+ModifierSeance.
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        DISPLAY 'Identifiant de la séance: '
+        ACCEPT fse_numSeance
+        READ FSeances
+        INVALID KEY
+            DISPLAY 'Séance Inéxistante'
+        NOT INVALID KEY
+            DISPLAY 'Numéro de la salle: '
+            ACCEPT fse_numSalle
+            DISPLAY 'Nom du Juge: '
+            ACCEPT fse_juge
+            DISPLAY 'Nouvelle Date: '
+            ACCEPT fse_date
+            REWRITE seanceTampon
+                INVALID KEY 
+                    DISPLAY 'Erreur d ecriture'
+                NOT INVALID KEY
+                    DISPLAY 'La séance a été modifié'
+            END-REWRITE
+        END-READ
+        CLOSE FSeances
+    ELSE
+        DISPLAY 'Erreur d ouverture de FSeances'
+    END-IF.
 
-AjouterAffaire..
-*> Mathieu
 
-ModifierAffaire..
-*> Mathieu
+SupprimerSeance.
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        DISPLAY 'Identifiant de la Séance: '
+        ACCEPT fse_numSeance
+        READ FSeances
+        INVALID KEY
+            DISPLAY 'Séance Inéxistante'
+        NOT INVALID KEY
+            DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1 ou 0'
+            PERFORM WITH TEST AFTER UNTIL wRep = 0 OR wRep = 1
+                ACCEPT wRep
+            END-PERFORM
+            IF wRep = 1 THEN
+                DELETE FSeances RECORD
+                DISPLAY 'Suppression effectuée'
+            ELSE
+                DISPLAY 'Suppression Annulée'
+            END-IF
+            CLOSE FSeances
+    ELSE
+        DISPLAY 'Erreur d ouverture de FSeances'
+    END-IF.
 
-SupprimerAffaire..
-*> Mathieu
+RechercheDerniereSeance.
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        MOVE 0 TO wFin
+        MOVE 0 TO wNse
+        PERFORM WITH TEST AFTER UNTIL wFin = 1
+            READ FSeances NEXT
+            AT END 
+                MOVE 1 TO wFin
+            NOT AT END
+                IF fse_numSeance > wNse THEN
+                    MOVE fse_numSeance TO wNse
+                END-IF
+            END-READ
+        END-PERFORM
+        CLOSE FSeances
+    ELSE
+        DISPLAY 'Erreur d ouverture de FSeances'
+    END-IF
+.
+      
+ConsulterAffaires.
+    OPEN INPUT FAffaires
+    MOVE 0 TO wFin
+    DISPLAY ' '
+    IF affaireCR = 00 THEN
+        PERFORM WITH TEST AFTER UNTIL wFin = 1
+            READ FAffaires 
+            AT END 
+                MOVE 1 TO wFin
+            NOT AT END
+                DISPLAY 'Référence: ', fa_refAffaire
+                IF fa_classee = 0 THEN
+                    DISPLAY 'Non Classée'
+                ELSE
+                    DISPLAY 'Classée'
+                END-IF
+                DISPLAY 'Contexte: ', fa_contexte
+                DISPLAY ' '
+        END-PERFORM
+        CLOSE FAffaires
+    ELSE
+        DISPLAY 'Erreur lors de l ouverture du fichier'
+    END-IF..
+      
+      AjouterAffaire.
+    OPEN EXTEND FAffaires
+    IF affaireCR = 35 THEN
+        DISPLAY 'Création du fichier Affaire'
+        OPEN OUTPUT FAffaires
+        CLOSE FAffaires
+        OPEN EXTEND FAffaires
+    END-IF
+    MOVE 0 TO wRep
+    PERFORM WITH TEST AFTER UNTIL wRep = 0
+        PERFORM RechercheAffaire
+        DISPLAY 'OUTPUT: ', wOut
+        IF wOut = 0 THEN
+            MOVE wRef to fa_refAffaire
+            MOVE 0 TO fa_classee
+            DISPLAY 'Contexte de l Affaire: '
+            ACCEPT fa_contexte
+            WRITE affaireTampon END-WRITE
+        ELSE
+            DISPLAY 'Affaire déjà existante'
+        END-IF
+        PERFORM WITH TEST AFTER UNTIL wRep = 0 OR wRep = 1
+            DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
+            ACCEPT wRep
+        END-PERFORM
+    END-PERFORM
+    CLOSE FAffaires.
+      ModifierAffaire.
+    PERFORM RechercheAffaire
+    IF wOut = 1 THEN
+        DISPLAY 'Modification de l affaire'
+    ELSE
+        DISPLAY 'Affaire Inexistante'
+    END-IF.
 
-ConsulterSalles..
-*> Oriane
+SupprimerAffaire.
+    PERFORM RechercheAffaire
+    IF wOut = 1 THEN
+        DISPLAY 'Suppression de l affaire'
+    ELSE
+        DISPLAY 'Affaire Inexistante'
+    END-IF.
 
-AjouterSalle..
-*> Oriane
+RechercheAffaire.
+    MOVE 0 to wOut
+    MOVE 0 to wFin
+    MOVE 0 to wTrouve
+    MOVE 0 TO wCr
+    MOVE 0 TO wClasse
+    MOVE '00000000' TO wRef
+    DISPLAY 'Référence de l Affaire: '
+    ACCEPT wRef
+    OPEN INPUT FAffaires
+    MOVE affaireCR to wCr
+    IF affaireCR <> 00 THEN
+        CLOSE FAffaires
+        OPEN INPUT FAffaires
+    END-IF
+    PERFORM WITH TEST AFTER UNTIL wTrouve = 1 OR wFin = 1
+        READ FAffaires
+        AT END MOVE 1 TO wFin
+        NOT AT END
+            IF wRef = fa_refAffaire THEN
+                MOVE 1 TO wTrouve
+                MOVE 1 TO wOut
+                MOVE fa_classee TO wClasse
+            END-IF
+    END-PERFORM
+    CLOSE FAffaires
+    IF wCr <> 00 THEN
+        OPEN EXTEND FAffaires
+    END-IF.
 
-ModifierSalle..
-*> Oriane
-
-SupprimerSalle..
-*> Oriane
-
-RechercherSallesLibres..
-*> Oriane
