@@ -37,6 +37,13 @@ SELECT FSalles ASSIGN TO "salles.dat"
     ACCESS IS SEQUENTIAL
     FILE STATUS IS salleCR.
 
+
+SELECT FSallesTemp ASSIGN TO "sallesTemp.dat"
+    ORGANIZATION SEQUENTIAL
+    ACCESS IS SEQUENTIAL
+    FILE STATUS IS salleTempCR.
+
+
 DATA DIVISION.
 FILE SECTION.
 FD FJures.
@@ -77,17 +84,33 @@ FD FSalles.
     02 fsa_numTribunal PIC 9(3).
     02 fsa_capacite PIC 9(3).
 
+FD FSallesTemp.
+01 salleTamponTemp.
+    02 fsa_numSalleTemp PIC 9(2).
+    02 fsa_numTribunalTemp PIC 9(3).
+    02 fsa_capaciteTemp PIC 9(3).
+    
 WORKING-STORAGE SECTION.
 77 jureCR PIC 9(2).
 77 convoCR PIC 9(2).
 77 seanceCR PIC 9(2).
 77 affaireCR PIC 9(2).
 77 salleCR PIC 9(2).
+77 salleTempCR PIC 9(2).
 
 77 choixMenu PIC 9(2).
 77 choixMenuSec PIC 9(2).
 77 nomJure PIC A(25).
 77 prenomJure PIC A(25).
+77 derniereSalle PIC 9(2).
+77 WFin PIC 9(1).
+77 WTrouve PIC 9(1).
+
+77 numS PIC 9(2).
+77 numT PIC 9(3).
+77 capa PIC 9(3).
+77 rep PIC 9(1).
+77 valid PIC 9(1).
 
 
 77 WFin PIC 9(1).
@@ -266,7 +289,6 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
        END-EVALUATE
 END-PERFORM.
 
-
 ConsulterJures.
 OPEN INPUT FJures
 MOVE 0 TO WFin
@@ -431,43 +453,77 @@ RechercherJuresNonConvoques.
 
 .
 *> Alvin
-
+      
 ConsulterConvocations.
 OPEN INPUT FConvocations
 IF convoCR <> 0
-    DISPLAY 'Fichier vide'
-    DISPLAY 'CR : ', convoCR
+DISPLAY 'Fichier vide'
 ELSE
-    MOVE 0 TO WFin
+MOVE 0 TO Wfin
     PERFORM WITH TEST AFTER UNTIL WFin = 1
-        READ FConvocations NEXT
-        AT END MOVE 1 TO WFin
-        NOT AT END
-            DISPLAY 'CR : ', convoCR
-            DISPLAY fc_nom, fc_prenom, fc_numSeance
-        END-READ
+       READ FConvocations 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           DISPLAY 'Numéro de seance : 'fc_numSeance
+           DISPLAY 'Nom du juré : 'fc_nom
+           DISPLAY 'Prénom du juré : 'fc_prenom
+           DISPLAY 'Validité de la convocation : 'fc_valide
+           DISPLAY ''
+       END-READ  
     END-PERFORM
 END-IF
 CLOSE FConvocations.
-*> Oriane
 
 AjouterConvocation.
-DISPLAY 'num seance'
-ACCEPT fc_numSeance
-DISPLAY 'nom jure'
-ACCEPT fc_nom
-DISPLAY 'prenom jure'
-ACCEPT fc_prenom
-DISPLAY 'valide'
-ACCEPT fc_valide
+
 OPEN I-O FConvocations
 IF convoCR <> 0
-CLOSE FConvocations
-OPEN OUTPUT FConvocations
+    CLOSE FConvocations
+    OPEN OUTPUT FConvocations
+ELSE
+
+MOVE 0 to Wtrouve
+Display 'Numéro de la séance'
+Accept numS
+
+Display ' Verification que la séance existe'
+OPEN INPUT FSeances
+READ FSeances ON numS
+IF seanceCR <> 0
+    CLOSE FSeances
+    DISPLAY 'Séance inexistante'
+    CLOSE FConvocations
+ELSE
+
+    Display 'Nom du juré'
+    accept nomJure
+    Display 'Prénom du juré'
+    accept prenomJure
+
+    OPEN INPUT FJures
+    READ FJures ON nomJure AND prenomJure
+    IF jureCR <> 0
+        CLOSE FJures
+        DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
+        CLOSE FConvocations
+    ELSE
+
+        Display 'Verification de l'existance du juré'
+
+        Display 'Validité initialisé'
+        Move 0 to valid
+
+        move numS TO fc_numSeance
+        Move nomJure TO fc_nom
+        MOvE prenomJure TO fc_prenom
+        MOVE valid TO fc_valide
+
+        Write convoTampon END-Write
+            DISPLAY 'Convocation créée'
+            CLOSE FConvocations
+    END-IF
 END-IF
-WRITE convoTampon END-WRITE
-CLOSE FConvocations.
-*> Oriane
+.
 
 ModifierConvocation..
 *> Oriane
@@ -723,8 +779,185 @@ RechercheAffaire.
         OPEN EXTEND FAffaires
     END-IF.
 
-ConsulterSalles..
-AjouterSalle..
-ModifierSalle..
-SupprimerSalle..
+ConsulterSalles.
+MOVE 0 TO WFin
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           DISPLAY 'Numéro de salle : 'fsa_numSalle
+           DISPLAY 'Numéro de tribunal : 'fsa_numTribunal
+           DISPLAY 'Capacité de la salle : 'fsa_capacite
+           DISPLAY ' '
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles.
+
+AjouterSalle.
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY 'Numero salle'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal'
+ACCEPT numT
+DISPLAY 'Saisir la capacité de la nouvelle salle'
+ACCEPT capa
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       CLOSE FSalles
+       OPEN OUTPUT FSalles
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve <> 1
+    OPEN Extend FSalles
+    MOVE capa TO fsa_capacite
+    MOVE numS TO fsa_numSalle
+    MOVE numT TO fsa_numTribunal
+    Write salleTampon END-Write
+    DISPLAY 'Salle créée'
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle déjà existante'
+END-IF.
+
+
+
+ModifierSalle.
+
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY ' Saisir le numéro de la salle à modifier'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
+ACCEPT numT
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'       
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve = 1
+    OPEN Extend FSalles
+       DISPLAY 'Informations actuelles de la salle'
+       DISPLAY 'capacité : ' fsa_capacite
+       DISPLAY '****'
+
+       DISPLAY 'Saisir la capacité de la nouvelle salle'
+       ACCEPT fsa_capacite
+       
+
+    REWrite salleTampon END-REWrite
+    IF salleCR = 0
+       DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
+    ELSE
+       DISPLAY 'Erreur lors de la modification'
+    END-IF
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle non trouvée'
+END-IF.
+
+SupprimerSalle.
+
+MOVE 0 TO WFin
+MOVE 0 TO WTrouve
+DISPLAY ' Saisir le numéro de la salle à supprimer'
+ACCEPT numS
+DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
+ACCEPT numT
+
+OPEN INPUT FSalles
+IF salleCR <> 0
+       DISPLAY 'Fichier vide'       
+ELSE 
+    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+               MOVE 1 to WTrouve
+           END-IF      
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FSalles
+
+IF WTrouve = 1
+    OPEN Extend FSalles
+       DISPLAY ' ** Informations actuelles de la salle **'
+       DISPLAY 'NumSalle : 'fsa_numSalle
+       DISPLAY 'NumTribunal : 'fsa_numTribunal
+       DISPLAY 'capacité : ' fsa_capacite
+       DISPLAY '****'
+
+       DISPLAY 'Souhaitez vous vraiment supprimer cette salle ? 1/0'
+       ACCEPT rep
+       
+       IF rep = 1
+
+            DISPLAY '** Debug 01 ** '
+            OPEN OUTPUT FSallesTemp
+            MOVE 0 to WFin
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                    display "** Debug 02**"
+                    READ FSalles
+                    AT END MOVE 1 TO WFin
+                    NOT AT END
+                    If fsa_numSalle <> numS OR fsa_numTribunal <> numT
+                        Write salleTampon END-Write
+                    END-IF
+                    END-READ
+               END-PERFORM
+
+               MOVE 0 to WFin 
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                  READ FSallesTemp
+                  AT END MOVE 1 TO WFin
+                  NOT AT END 
+                  Write salleTamponTemp END-Write
+                  END-READ
+               END-PERFORM
+
+
+            DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
+            CLOSE FSallesTemp
+
+       ELSE           
+       DISPLAY 'Suppression annulée'
+       END-IF
+   
+    CLOSE FSalles
+ELSE 
+    DISPLAY 'Salle non trouvée'
+END-IF.
+
 RechercherSallesLibres..
