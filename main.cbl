@@ -109,6 +109,7 @@ WORKING-STORAGE SECTION.
 77 numT PIC 9(3).
 77 capa PIC 9(3).
 77 rep PIC 9(1).
+77 valid PIC 9(1).
 
 PROCEDURE DIVISION.
 PERFORM MenuPrincipal.
@@ -287,10 +288,77 @@ ModifierJure..
 SupprimerJure..
 
 
-ConsulterConvocations..
+ConsulterConvocations.
 
+OPEN INPUT FConvocations
+IF convoCR <> 0
+DISPLAY 'Fichier vide'
+ELSE
+MOVE 0 TO Wfin
+    PERFORM WITH TEST AFTER UNTIL WFin = 1
+       READ FConvocations 
+       AT END MOVE 1 to WFin
+       NOT AT END
+           DISPLAY 'Numéro de seance : 'fc_numSeance
+           DISPLAY 'Nom du juré : 'fc_nom
+           DISPLAY 'Prénom du juré : 'fc_prenom
+           DISPLAY 'Validité de la convocation : 'fc_valide
+           DISPLAY ''
+       END-READ  
+    END-PERFORM
+END-IF
+CLOSE FConvocations.
 
-AjouterConvocation..
+AjouterConvocation.
+
+OPEN I-O FConvocations
+IF convoCR <> 0
+    CLOSE FConvocations
+    OPEN OUTPUT FConvocations
+ELSE
+
+MOVE 0 to Wtrouve
+Display 'Numéro de la séance'
+Accept numS
+
+Display ' Verification que la séance existe'
+OPEN INPUT FSeances
+READ FSeances ON numS
+IF seanceCR <> 0
+    CLOSE FSeances
+    DISPLAY 'Séance inexistante'
+    CLOSE FConvocations
+ELSE
+
+    Display 'Nom du juré'
+    accept nomJure
+    Display 'Prénom du juré'
+    accept prenomJure
+
+    OPEN INPUT FJures
+    READ FJures ON nomJure AND prenomJure
+    IF jureCR <> 0
+        CLOSE FJures
+        DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
+        CLOSE FConvocations
+    ELSE
+
+        Display 'Verification de l'existance du juré'
+
+        Display 'Validité initialisé'
+        Move 0 to valid
+
+        move numS TO fc_numSeance
+        Move nomJure TO fc_nom
+        MOvE prenomJure TO fc_prenom
+        MOVE valid TO fc_valide
+
+        Write convoTampon END-Write
+            DISPLAY 'Convocation créée'
+            CLOSE FConvocations
+    END-IF
+END-IF
+.
 
 
 ModifierConvocation..
