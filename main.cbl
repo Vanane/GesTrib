@@ -866,21 +866,51 @@ END-IF
 CLOSE FSalles
 
 IF WTrouve = 1
-    OPEN Extend FSalles
+    OPEN INPUT FSalles
+    
+    
        DISPLAY 'Informations actuelles de la salle'
        DISPLAY 'capacité : ' fsa_capacite
        DISPLAY '****'
 
-       DISPLAY 'Saisir la capacité de la nouvelle salle'
-       ACCEPT fsa_capacite
-       
 
-    REWrite salleTampon END-REWrite
-    IF salleCR = 0
-       DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
-    ELSE
-       DISPLAY 'Erreur lors de la modification'
-    END-IF
+       DISPLAY 'Saisir la capacité de la nouvelle salle'
+       ACCEPT capa
+
+OPEN OUTPUT FSallesTemp
+MOVE 0 to Wfin
+       PERFORM WITH TEST AFTER UNTIL Wfin = 1
+           READ FSalles
+           AT END MOVE 1 TO Wfin
+           NOT AT END 
+           
+            MOVE fsa_numSalle TO fsa_numSalleTemp
+            MOVE fsa_numTribunal TO fsa_numTribunalTemp
+            IF fsa_numSalle = numS AND fsa_numTribunal = numT
+            MOVE capa to fsa_capaciteTemp      
+            ELSE
+            MOVE fsa_capacite TO fsa_capaciteTemp
+            END-IF
+
+           Write salleTamponTemp END-Write
+       END-PERFORM
+    CLOSE FSallesTemp
+    CLOSE FSalles
+    OPEN OUTPUT Fsalles
+    OPEN INPUT FSallesTemp
+    MOVE 0 to WFin
+    PERFORM WITH TEST AFTER UNTIL Wfin = 1
+       READ FSallesTemp
+       AT END MOVE 1 TO Wfin
+       NOT AT END
+       MOVE  fsa_numSalleTemp TO fsa_numSalle
+       MOVE fsa_numTribunalTemp TO fsa_numTribunal
+       MOVE fsa_capaciteTemp TO fsa_capacite
+       Write salleTampon END-Write
+       END-READ
+     END-PERFORM
+    DISPLAY 'Modification effectuée'
+    CLOSE FSallesTemp
     CLOSE FSalles
 ELSE 
     DISPLAY 'Salle non trouvée'
@@ -912,7 +942,7 @@ END-IF
 CLOSE FSalles
 
 IF WTrouve = 1
-    OPEN Extend FSalles
+    OPEN INPUT FSalles
        DISPLAY ' ** Informations actuelles de la salle **'
        DISPLAY 'NumSalle : 'fsa_numSalle
        DISPLAY 'NumTribunal : 'fsa_numTribunal
@@ -928,22 +958,31 @@ IF WTrouve = 1
             OPEN OUTPUT FSallesTemp
             MOVE 0 to WFin
                PERFORM WITH TEST AFTER UNTIL WFin = 1
-                    display "** Debug 02**"
                     READ FSalles
                     AT END MOVE 1 TO WFin
                     NOT AT END
                     If fsa_numSalle <> numS OR fsa_numTribunal <> numT
-                        Write salleTampon END-Write
+                      MOVE fsa_numSalle TO fsa_numSalleTemp
+                      MOVE fsa_numTribunal TO fsa_numTribunalTemp
+                      MOVE fsa_capacite TO fsa_capaciteTemp                      
+                      Write salleTamponTemp END-Write
+                       DISPLAY 'Pas bon'
                     END-IF
-                    END-READ
+                    display '** Debug 02**'     
                END-PERFORM
-
+           CLOSE FSallesTemp
+           CLOSE FSalles
+           OPEN OUTPUT Fsalles
+           OPEN INPUT FSallesTemp
                MOVE 0 to WFin 
                PERFORM WITH TEST AFTER UNTIL WFin = 1
                   READ FSallesTemp
                   AT END MOVE 1 TO WFin
                   NOT AT END 
-                  Write salleTamponTemp END-Write
+                  MOVE  fsa_numSalleTemp TO fsa_numSalle
+                  MOVE fsa_numTribunalTemp TO fsa_numTribunal
+                  MOVE fsa_capaciteTemp TO fsa_capacite
+                  Write salleTampon END-Write
                   END-READ
                END-PERFORM
 
