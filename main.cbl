@@ -445,11 +445,33 @@ CLOSE FJures.
 
 RechercherJuresNonConvoques.
 *>Lire Jurés. Pour chaque juré,
-       *> LireZone ses convocations jusqu'à la fin ou Valide = 0.
-       *> Si convo avec valide = 0 trouvée, afficher juré et passer au suivant.
-
-
-.
+       *> LireZone ses convocations.
+       *> Si pas de convo, alors afficher et passer au juré suivant.
+OPEN INPUT FJures
+IF jureCR <> 0
+    DISPLAY 'Aucun juré enregistré.'
+ELSE
+    MOVE 0 TO WFin
+    PERFORM WITH TEST AFTER UNTIL WFin = 1
+       READ FJures
+       AT END MOVE 1 TO WFin
+       NOT AT END
+           OPEN INPUT FConvocations
+           IF convoCR <> 0
+               DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
+           ELSE
+               MOVE fj_nom TO fc_nom
+               MOVE fj_prenom TO fc_prenom
+               START FConvocations KEY EQUALS fc_jure
+               INVALID KEY
+                   DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
+               END-START
+           CLOSE FConvocations
+           END-IF
+       END-READ
+    END-PERFORM
+END-IF
+CLOSE FJures.
 *> Alvin
       
 ConsulterConvocations.
