@@ -25,7 +25,7 @@ SELECT FSeances ASSIGN TO "seances.dat"
     FILE STATUS IS seanceCR
     RECORD KEY IS fse_numSeance
     ALTERNATE RECORD KEY IS fse_refAffaire WITH DUPLICATES
-    ALTERNATE RECORD KEY IS fse_numSalle WITH DUPLICATES.
+    ALTERNATE RECORD KEY IS fse_salle WITH DUPLICATES.
 
 SELECT FAffaires ASSIGN TO "affaires.dat"
     ORGANIZATION SEQUENTIAL
@@ -37,12 +37,15 @@ SELECT FSalles ASSIGN TO "salles.dat"
     ACCESS IS SEQUENTIAL
     FILE STATUS IS salleCR.
 
-
 SELECT FSallesTemp ASSIGN TO "sallesTemp.dat"
     ORGANIZATION SEQUENTIAL
     ACCESS IS SEQUENTIAL
     FILE STATUS IS salleTempCR.
 
+SELECT FAffairesTemp ASSIGN TO "affairesTemp.dat"
+    ORGANIZATION SEQUENTIAL
+    ACCESS IS SEQUENTIAL
+    FILE STATUS IS affairesTempCR.
 
 DATA DIVISION.
 FILE SECTION.
@@ -70,7 +73,9 @@ FD FSeances.
     02 fse_juge PIC A(25).
     02 fse_date PIC 9(8).
     02 fse_refAffaire PIC A(9).
-    02 fse_numSalle PIC 9(2).
+    02 fse_salle.
+        03 fse_numSalle PIC 9(2).
+        03 fse_numTribunal PIC 9(3).
 
 FD FAffaires.
 01 affaireTampon.
@@ -89,6 +94,12 @@ FD FSallesTemp.
     02 fsa_numSalleTemp PIC 9(2).
     02 fsa_numTribunalTemp PIC 9(3).
     02 fsa_capaciteTemp PIC 9(3).
+
+FD FAffairesTemp.
+01 affaireTamponTemp.
+    02 fa_refAffaireTemp PIC A(9).
+    02 fa_classeeTemp PIC 9(1).
+    02 fa_contexteTemp PIC A(128).
     
 WORKING-STORAGE SECTION.
 77 jureCR PIC 9(2).
@@ -97,6 +108,7 @@ WORKING-STORAGE SECTION.
 77 affaireCR PIC 9(2).
 77 salleCR PIC 9(2).
 77 salleTempCR PIC 9(2).
+77 affairesTempCR PIC 9(2).
 
 77 choixMenu PIC 9(2).
 77 choixMenuSec PIC 9(2).
@@ -110,8 +122,11 @@ WORKING-STORAGE SECTION.
 77 rep PIC 9(1).
 77 valide PIC 9(1).
 
-
 77 WFin PIC 9(1).
+77 wTtrib PIC A(25).
+77 wNJuge PIC A(25).
+77 wNsalle PIC 9(2).
+77 wNtrib PIC 9(3).
 77 WRep pic 9(1).
 77 WTrouve PIC 9(1).
 77 WRef PIC A(9).
@@ -124,17 +139,17 @@ WORKING-STORAGE SECTION.
 01 dateAjd PIC 9(8).
 
 PROCEDURE DIVISION.
-PERFORM MenuPrincipal
+    PERFORM MenuPrincipal
 STOP RUN.
 
 MenuPrincipal.
-DISPLAY '----------------'
-DISPLAY 'Menu Principal:'
-DISPLAY '  1 : Login Juré'
-DISPLAY '  2 : Login Administrateur'
-DISPLAY '----------------'
-DISPLAY ' 0 : Quitter'
-ACCEPT choixMenu
+    DISPLAY '----------------'
+    DISPLAY 'Menu Principal:'
+    DISPLAY '  1 : Login Juré'
+    DISPLAY '  2 : Login Administrateur'
+    DISPLAY '----------------'
+    DISPLAY ' 0 : Quitter'
+ACCEPT choixMenu.
 
 EVALUATE choixMenu
     WHEN 1 PERFORM MenuJure
@@ -142,14 +157,14 @@ EVALUATE choixMenu
 END-EVALUATE.
 
 MenuJure.
-DISPLAY '----------------'
-DISPLAY 'Menu Juré:'
-DISPLAY '  1 : Consulter les prochaines séances'
-DISPLAY '----------------'
-DISPLAY '0 : Quitter'  
-ACCEPT choixMenu
-EVALUATE choixMenu
-    WHEN 1 PERFORM ConsulterSeances
+    DISPLAY '----------------'
+    DISPLAY 'Menu Juré:'
+    DISPLAY '  1 : Consulter les prochaines séances'
+    DISPLAY '----------------'
+    DISPLAY '0 : Quitter'  
+    ACCEPT choixMenu
+    EVALUATE choixMenu
+        WHEN 1 PERFORM ConsulterSeances
 END-EVALUATE.
 
 MenuAdmin.
@@ -288,263 +303,262 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
 END-PERFORM.
 
 ConsulterJures.
-OPEN INPUT FJures
-MOVE 0 TO WFin
-IF jureCR <> 0
-    DISPLAY 'Fichier vide !'
-ELSE
-    PERFORM WITH TEST AFTER UNTIL WFin = 1
-       READ FJures NEXT
-       AT END MOVE 1 TO WFin
-       NOT AT END
-           DISPLAY fj_nom, ' ', fj_prenom, ' ', fj_adresse' ', fj_departement
-       END-READ
-    END-PERFORM
-END-IF
+    OPEN INPUT FJures
+    MOVE 0 TO WFin
+    IF jureCR <> 0
+        DISPLAY 'Fichier vide !'
+    ELSE
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
+        READ FJures NEXT
+        AT END MOVE 1 TO WFin
+        NOT AT END
+            DISPLAY fj_nom, ' ', fj_prenom, ' ', fj_adresse' ', fj_departement
+        END-READ
+        END-PERFORM
+    END-IF
 CLOSE FJures.
 *> Alvin
 
 AjouterJure.
 *> Alvin
-DISPLAY 'Saisir le nom et le prénom du juré :'
-ACCEPT fj_nom
-ACCEPT fj_prenom
+    DISPLAY 'Saisir le nom et le prénom du juré :'
+    ACCEPT fj_nom
+    ACCEPT fj_prenom
 
-OPEN INPUT FJures
-READ FJures
-KEY IS fj_cle
-END-READ 
-IF jureCR = 0
-    DISPLAY 'Ce juré existe déjà.'
-ELSE
-    CLOSE FJures
-    OPEN I-O FJures
-    DISPLAY 'CR : ', jureCR
-    *>Vérification de l'existence du fichier
-    IF jureCR <> 0
-       CLOSE FJures
-       OPEN OUTPUT FJures
+    OPEN INPUT FJures
+    READ FJures
+    KEY IS fj_cle
+    END-READ 
+    IF jureCR = 0
+        DISPLAY 'Ce juré existe déjà.'
+    ELSE
+        CLOSE FJures
+        OPEN I-O FJures
+        DISPLAY 'CR : ', jureCR
+        *>Vérification de l'existence du fichier
+        IF jureCR <> 0
+        CLOSE FJures
+        OPEN OUTPUT FJures
+        END-IF
+        DISPLAY 'CR : ', jureCR
+        DISPLAY 'Saisir le numéro de département :'
+        ACCEPT fj_departement
+        DISPLAY 'Saisir l''adresse :'
+        ACCEPT fj_adresse
+        WRITE jureTampon
+        INVALID KEY
+            DISPLAY "zut."
+        NOT INVALID KEY
+            DISPLAY "Ajouté !"
+        END-WRITE
     END-IF
-    DISPLAY 'CR : ', jureCR
-    DISPLAY 'Saisir le numéro de département :'
-    ACCEPT fj_departement
-    DISPLAY 'Saisir l''adresse :'
-    ACCEPT fj_adresse
-    WRITE jureTampon
-       INVALID KEY
-           DISPLAY "zut."
-       NOT INVALID KEY
-           DISPLAY "Ajouté !"
-    END-WRITE
-END-IF
-
 CLOSE FJures.
 
 ModifierJure.
-OPEN INPUT FJures
-DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
-DISPLAY '  Nom :'
-ACCEPT fj_nom
-DISPLAY '  Prénom :'
-ACCEPT fj_prenom
+    OPEN INPUT FJures
+    DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
+    DISPLAY '  Nom :'
+    ACCEPT fj_nom
+    DISPLAY '  Prénom :'
+    ACCEPT fj_prenom
 
-READ FJures
-KEY IS fj_cle
-END-READ
-IF jureCR <> 0
-       DISPLAY 'Ce juré n''existe pas'
-ELSE
-    CLOSE FJures
-    OPEN I-O FJures
-    DISPLAY ' '
-    DISPLAY 'Informations actuelles :'
-    DISPLAY '  Nom : ', fj_nom
-    DISPLAY '  Prénom : ', fj_prenom
-    DISPLAY '  Adresse : ', fj_adresse
-    DISPLAY '  Département : ', fj_departement
-
-    DISPLAY 'Saisir les informations à modifier :'
-    DISPLAY '  Adresse :'
-    ACCEPT fj_adresse
-    DISPLAY '  Département :'
-    ACCEPT fj_departement
-    REWRITE jureTampon END-REWRITE
-    IF jureCR = 0
-       DISPLAY 'Informations enregistrées !'
+    READ FJures
+    KEY IS fj_cle
+    END-READ
+    IF jureCR <> 0
+        DISPLAY 'Ce juré n''existe pas'
     ELSE
-       DISPLAY 'Erreur d''enregistrement (',jureCR,')'
-END-IF
+        CLOSE FJures
+        OPEN I-O FJures
+        DISPLAY ' '
+        DISPLAY 'Informations actuelles :'
+        DISPLAY '  Nom : ', fj_nom
+        DISPLAY '  Prénom : ', fj_prenom
+        DISPLAY '  Adresse : ', fj_adresse
+        DISPLAY '  Département : ', fj_departement
+
+        DISPLAY 'Saisir les informations à modifier :'
+        DISPLAY '  Adresse :'
+        ACCEPT fj_adresse
+        DISPLAY '  Département :'
+        ACCEPT fj_departement
+        REWRITE jureTampon END-REWRITE
+        IF jureCR = 0
+        DISPLAY 'Informations enregistrées !'
+        ELSE
+        DISPLAY 'Erreur d''enregistrement (',jureCR,')'
+    END-IF
 CLOSE FJures.
 *> Alvin
 
 SupprimerJure.
-MOVE 0 TO WFin
-OPEN I-O FJures
+    MOVE 0 TO WFin
+    OPEN I-O FJures
 
-DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
-DISPLAY '  Nom :'
-ACCEPT fj_nom
-DISPLAY '  Prénom :'
-ACCEPT fj_prenom
+    DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
+    DISPLAY '  Nom :'
+    ACCEPT fj_nom
+    DISPLAY '  Prénom :'
+    ACCEPT fj_prenom
 
-READ FJures KEY IS fj_cle END-READ
-IF jureCR = 0
-    MOVE fj_nom TO fc_nom
-    MOVE fj_prenom TO fc_prenom
+    READ FJures KEY IS fj_cle END-READ
+    IF jureCR = 0
+        MOVE fj_nom TO fc_nom
+        MOVE fj_prenom TO fc_prenom
 
-    OPEN I-O FConvocations
-    START FConvocations KEY EQUALS fc_jure
-    INVALID KEY 
-        DISPLAY 'Pas de convocation pour ce juré'
-    NOT INVALID KEY
-       OPEN INPUT FSeances
-       IF seanceCR <> 0
-           DISPLAY 'Aucune séance n''existe.'
-       ELSE
-           PERFORM WITH TEST AFTER UNTIL WFin = 1
-               READ FConvocations NEXT
-               *>AT END MOVE 1 TO WFin
-               NOT AT END
-                   IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
-                       MOVE 1 TO WFin
-                   ELSE
-                       MOVE fc_numSeance TO fse_numSeance
-                       READ FSeances KEY IS fse_numSeance END-READ
-                       IF seanceCR <> 0
-                           DISPLAY 'La séance n°', fse_numSeance, ' n''existe pas'
-                       ELSE
-                           DISPLAY 'La séance n°', fse_numSeance, ' existe !'
-                           ACCEPT dateAjd FROM DATE YYYYMMDD
-                           DISPLAY 'lecture de la date...'
-                           IF fse_date <= dateAjd
-                               DELETE FConvocations RECORD
-                               NOT INVALID KEY
-                                      DISPLAY 'convo supprimée !'
-                               END-DELETE
-                            ELSE
-                               DISPLAY 'convo gardée'
-                           END-IF
-                       END-IF
-                   END-IF
-               END-READ
-           END-PERFORM
-       END-IF
-    END-START
-    CLOSE FConvocations
-    CLOSE FSeances
+        OPEN I-O FConvocations
+        START FConvocations KEY EQUALS fc_jure
+        INVALID KEY 
+            DISPLAY 'Pas de convocation pour ce juré'
+        NOT INVALID KEY
+        OPEN INPUT FSeances
+        IF seanceCR <> 0
+            DISPLAY 'Aucune séance n''existe.'
+        ELSE
+            PERFORM WITH TEST AFTER UNTIL WFin = 1
+                READ FConvocations NEXT
+                *>AT END MOVE 1 TO WFin
+                NOT AT END
+                    IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
+                        MOVE 1 TO WFin
+                    ELSE
+                        MOVE fc_numSeance TO fse_numSeance
+                        READ FSeances KEY IS fse_numSeance END-READ
+                        IF seanceCR <> 0
+                            DISPLAY 'La séance n°', fse_numSeance, ' n''existe pas'
+                        ELSE
+                            DISPLAY 'La séance n°', fse_numSeance, ' existe !'
+                            ACCEPT dateAjd FROM DATE YYYYMMDD
+                            DISPLAY 'lecture de la date...'
+                            IF fse_date <= dateAjd
+                                DELETE FConvocations RECORD
+                                NOT INVALID KEY
+                                        DISPLAY 'convo supprimée !'
+                                END-DELETE
+                                ELSE
+                                DISPLAY 'convo gardée'
+                            END-IF
+                        END-IF
+                    END-IF
+                END-READ
+            END-PERFORM
+        END-IF
+        END-START
+        CLOSE FConvocations
+        CLOSE FSeances
 
-    DELETE FJures RECORD
-    NOT INVALID KEY
-       DISPLAY 'Juré supprimé !'
-    END-DELETE
-ELSE *> Si jureCR n'est pas 0 après lecture sur nom prenom
-    DISPLAY 'Ce juré n''existe pas.'
-END-IF
+        DELETE FJures RECORD
+        NOT INVALID KEY
+        DISPLAY 'Juré supprimé !'
+        END-DELETE
+    ELSE *> Si jureCR n'est pas 0 après lecture sur nom prenom
+        DISPLAY 'Ce juré n''existe pas.'
+    END-IF
 CLOSE FJures.
 *> Alvin
 
 RechercherJuresNonConvoques.
-*>Lire Jurés. Pour chaque juré,
-       *> LireZone ses convocations.
-       *> Si pas de convo, alors afficher et passer au juré suivant.
-OPEN INPUT FJures
-IF jureCR <> 0
-    DISPLAY 'Aucun juré enregistré.'
-ELSE
-    MOVE 0 TO WFin
-    PERFORM WITH TEST AFTER UNTIL WFin = 1
-       READ FJures
-       AT END MOVE 1 TO WFin
-       NOT AT END
-           OPEN INPUT FConvocations
-           IF convoCR <> 0
-               DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
-           ELSE
-               MOVE fj_nom TO fc_nom
-               MOVE fj_prenom TO fc_prenom
-               START FConvocations KEY EQUALS fc_jure
-               INVALID KEY
-                   DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
-               END-START
-           CLOSE FConvocations
-           END-IF
-       END-READ
-    END-PERFORM
-END-IF
+    *>Lire Jurés. Pour chaque juré,
+        *> LireZone ses convocations.
+        *> Si pas de convo, alors afficher et passer au juré suivant.
+    OPEN INPUT FJures
+    IF jureCR <> 0
+        DISPLAY 'Aucun juré enregistré.'
+    ELSE
+        MOVE 0 TO WFin
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
+        READ FJures
+        AT END MOVE 1 TO WFin
+        NOT AT END
+            OPEN INPUT FConvocations
+            IF convoCR <> 0
+                DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
+            ELSE
+                MOVE fj_nom TO fc_nom
+                MOVE fj_prenom TO fc_prenom
+                START FConvocations KEY EQUALS fc_jure
+                INVALID KEY
+                    DISPLAY fj_nom, fj_prenom, ' n''a pas reçu de convocation.'
+                END-START
+            CLOSE FConvocations
+            END-IF
+        END-READ
+        END-PERFORM
+    END-IF
 CLOSE FJures.
 *> Alvin
       
 ConsulterConvocations.
-OPEN INPUT FConvocations
-IF convoCR <> 0
-DISPLAY 'Fichier vide'
-ELSE
-MOVE 0 TO Wfin
-    PERFORM WITH TEST AFTER UNTIL WFin = 1
-       READ FConvocations 
-       AT END MOVE 1 to WFin
-       NOT AT END
-           DISPLAY 'Numéro de seance : ', fc_numSeance
-           DISPLAY 'Nom du juré : ', fc_nom
-           DISPLAY 'Prénom du juré : ', fc_prenom
-           DISPLAY 'Validité de la convocation : ', fc_valide
-           DISPLAY ' '
-       END-READ  
-    END-PERFORM
-END-IF
+    OPEN INPUT FConvocations
+    IF convoCR <> 0
+    DISPLAY 'Fichier vide'
+    ELSE
+    MOVE 0 TO Wfin
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
+        READ FConvocations 
+        AT END MOVE 1 to WFin
+        NOT AT END
+            DISPLAY 'Numéro de seance : ', fc_numSeance
+            DISPLAY 'Nom du juré : ', fc_nom
+            DISPLAY 'Prénom du juré : ', fc_prenom
+            DISPLAY 'Validité de la convocation : ', fc_valide
+            DISPLAY ' '
+        END-READ  
+        END-PERFORM
+    END-IF
 CLOSE FConvocations.
 
 AjouterConvocation.
 
-OPEN I-O FConvocations
-IF convoCR <> 0
-    CLOSE FConvocations
-    OPEN OUTPUT FConvocations
-ELSE
-
-MOVE 0 to Wtrouve
-Display 'Numéro de la séance'
-Accept numS
-
-Display ' Verification que la séance existe'
-OPEN INPUT FSeances
-
-READ FSeances KEY fse_numSeance
-IF seanceCR <> 0
-    CLOSE FSeances
-    DISPLAY 'Séance inexistante'
-    CLOSE FConvocations
-ELSE
-
-    Display 'Nom du juré'
-    accept nomJure
-    Display 'Prénom du juré'
-    accept prenomJure
-
-    OPEN INPUT FJures
-
-    READ FJures KEY fc_jure
-    IF jureCR <> 0
-       CLOSE FJures
-       DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
-       CLOSE FConvocations
+    OPEN I-O FConvocations
+    IF convoCR <> 0
+        CLOSE FConvocations
+        OPEN OUTPUT FConvocations
     ELSE
 
-        Display 'Verification de l''existance du juré'
+    MOVE 0 to Wtrouve
+    Display 'Numéro de la séance'
+    Accept numS
 
-        Display 'Validité initialisé'
-        Move 0 to valide
+    Display ' Verification que la séance existe'
+    OPEN INPUT FSeances
 
-        move numS TO fc_numSeance
-        Move nomJure TO fc_nom
-        MOvE prenomJure TO fc_prenom
-        MOVE valide TO fc_valide
+    READ FSeances KEY fse_numSeance
+    IF seanceCR <> 0
+        CLOSE FSeances
+        DISPLAY 'Séance inexistante'
+        CLOSE FConvocations
+    ELSE
 
-        Write convoTampon END-Write
-            DISPLAY 'Convocation créée'
-            CLOSE FConvocations
+        Display 'Nom du juré'
+        accept nomJure
+        Display 'Prénom du juré'
+        accept prenomJure
+
+        OPEN INPUT FJures
+
+        READ FJures KEY fc_jure
+        IF jureCR <> 0
+        CLOSE FJures
+        DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
+        CLOSE FConvocations
+        ELSE
+
+            Display 'Verification de l''existance du juré'
+
+            Display 'Validité initialisé'
+            Move 0 to valide
+
+            move numS TO fc_numSeance
+            Move nomJure TO fc_nom
+            MOvE prenomJure TO fc_prenom
+            MOVE valide TO fc_valide
+
+            Write convoTampon END-Write
+                DISPLAY 'Convocation créée'
+                CLOSE FConvocations
+        END-IF
     END-IF
-END-IF
 .
 
 ModifierConvocation..
@@ -577,58 +591,124 @@ ConsulterSeances.
         CLOSE FSeances
     ELSE
         DISPLAY 'Erreur d ouverture de FSeances'
-    END-IF.
+    END-IF
+.
 
 AjouterSeance.
     OPEN I-O FSeances
     IF seanceCR = 35 THEN
-      OPEN OUTPUT FSeances
+        OPEN OUTPUT FSeances
+        CLOSE FSeances
+        OPEN I-O FSeances
     END-IF
-    CLOSE FSeances
-    MOVE 0 TO WRep
-    PERFORM RechercheDerniereSeance
-    OPEN I-O FSeances
     
-    ACCEPT WDate FROM DATE YYYYMMDD
-    COMPUTE WDate = FUNCTION INTEGER-OF-DATE(WDate) + 7
+    *>Récupération du dernier num seance
+    MOVE 0 TO WFin
+    MOVE 0 TO WNse
+    PERFORM WITH TEST AFTER UNTIL WFin = 1
+        READ FSeances NEXT
+        AT END
+            MOVE 1 TO WFin
+        NOT AT END
+            IF fse_numSeance > WNse THEN
+                MOVE fse_numSeance TO WNse
+            END-IF
+        END-READ
+    END-PERFORM
 
     PERFORM WITH TEST AFTER UNTIL WRep = 0
+        *>Récupération de la date actuelles
+        ACCEPT WDate FROM DATE YYYYMMDD
+        COMPUTE WDate = FUNCTION INTEGER-OF-DATE(WDate) + 7
         ADD 1 TO WNse
-        MOVE WNse TO fse_numSeance
-        DISPLAY 'Séance n°', fse_numSeance
+        DISPLAY 'Séance n°', WNse
         DISPLAY 'Type de tribunal: '
-        ACCEPT fse_typeTribunal
+        ACCEPT wTtrib
         DISPLAY 'Nom du juge: '
-        ACCEPT fse_juge
+        ACCEPT wNJuge
 
         DISPLAY 'Date de la séance (YYYYMMDD): '
         ACCEPT fse_date
         COMPUTE fse_date = FUNCTION INTEGER-OF-DATE(fse_date)
         IF fse_date >= WDate THEN
-            DISPLAY 'Date Valide'
+            MOVE fse_date TO WDate
+            COMPUTE WDate = FUNCTION DATE-OF-INTEGER(WDate)
+            DISPLAY 'Numéro de la salle: '
+            ACCEPT wNsalle
+            DISPLAY 'Numéro du Tribunal: '
+            ACCEPT wNtrib
+
+            OPEN INPUT FSalles
+            IF salleCR = 00 THEN
+                MOVE 0 TO WFin
+                MOVE 0 TO WTrouve
+                PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve = 1
+                    READ FSalles
+                    AT END MOVE 1 TO WFin
+                    NOT AT END
+                        IF wNtrib = fsa_numTribunal AND wNsalle = fsa_numSalle THEN
+                            MOVE 1 TO WTrouve
+                        END-IF
+                END-PERFORM
+                CLOSE Fsalles
+                
+                IF WTrouve = 1 THEN
+                    MOVE 0 TO WFin
+                    MOVE 0 TO WTrouve
+                    MOVE wNsalle TO fse_numSalle
+                    MOVE wNtrib TO fse_numTribunal
+                    START FSeances, KEY IS = fse_salle
+                    NOT INVALID KEY
+                        PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
+                            READ FSeances NEXT
+                            AT END 
+                                MOVE 1 TO WFin
+                            NOT AT END 
+                                IF FUNCTION INTEGER-OF-DATE(fse_date) = FUNCTION INTEGER-OF-DATE(WDate)
+                                    MOVE 1 TO WTrouve
+                                END-IF
+                                IF fse_numSalle = wNsalle AND fse_numTribunal = wNtrib THEN
+                                    MOVE 1 TO WFin
+                                END-IF
+                        END-PERFORM
+                    END-START
+
+                    IF Wtrouve = 0 THEN
+                        PERFORM RechercheAffaire 
+                        IF Wtrouve = 1 AND WClasse = 0 THEN
+                            MOVE WRef TO fse_refAffaire
+                            MOVE WNse TO fse_numSeance
+                            MOVE wNJuge TO fse_juge
+                            MOVE wTtrib TO fse_typeTribunal
+                            MOVE wNsalle TO fse_numSalle
+                            MOVE wNtrib TO fse_numTribunal
+                            MOVE WDate TO fse_date
+                            WRITE seanceTampon END-WRITE
+                            IF seanceCR NOT = 00 THEN
+                                DISPLAY 'Erreur d ecriture'
+                            END-IF
+                        ELSE 
+                            DISPLAY 'Affaire Inconnue Ou déjà Classée'
+                        END-If
+                    ELSE
+                        DISPLAY 'Salle non disponible'
+                    END-IF
+                ELSE
+                    DISPLAY 'Salle Inexistante'
+                END-IF
+            ELSE
+                DISPLAY 'Fichier salle inexistant'
+            END-IF
         ELSE
             DISPLAY 'Date Invalide'
-        END-IF
-
-        DISPLAY 'Numéro de la salle: '
-        ACCEPT fse_numSalle
-        PERFORM RechercheAffaire 
-        IF WOut = 1 AND WClasse = 0 THEN
-            MOVE WRef TO fse_refAffaire
-            WRITE seanceTampon END-WRITE
-            IF seanceCR NOT = 00 THEN
-                DISPLAY 'Erreur d ecriture'
-            END-IF
-        ELSE 
-            DISPLAY 'Affaire Inconnue Ou déjà Classée'
         END-IF
         PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
             DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
             ACCEPT WRep 
         END-PERFORM
     END-PERFORM
-    CLOSE FSeances.
-
+    CLOSE FSeances
+.
 
 ModifierSeance.
     OPEN I-O FSeances
@@ -639,24 +719,85 @@ ModifierSeance.
         INVALID KEY
             DISPLAY 'Séance Inéxistante'
         NOT INVALID KEY
-            DISPLAY 'Numéro de la salle: '
-            ACCEPT fse_numSalle
             DISPLAY 'Nom du Juge: '
-            ACCEPT fse_juge
-            DISPLAY 'Nouvelle Date: '
-            ACCEPT fse_date
-            REWRITE seanceTampon
-                INVALID KEY 
-                    DISPLAY 'Erreur d ecriture'
-                NOT INVALID KEY
-                    DISPLAY 'La séance a été modifié'
-            END-REWRITE
+            ACCEPT wNJuge
+            DISPLAY 'Nouvelle Date: (Supérieur à ', fse_date, ')'
+            ACCEPT WDate
+
+            IF FUNCTION INTEGER-OF-DATE(WDate) > FUNCTION INTEGER-OF-DATE(fse_date) THEN
+                DISPLAY 'Numéro de la salle: '
+                ACCEPT wNsalle
+                DISPLAY 'Numéro du tribunal: '
+                ACCEPT wNtrib
+
+                OPEN INPUT FSalles
+                IF salleCR = 00 THEN
+                    MOVE 0 TO WFin
+                    MOVE 0 TO WTrouve
+                    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve = 1
+                        READ FSalles
+                        AT END MOVE 1 TO WFin
+                        NOT AT END
+                            IF wNtrib = fsa_numTribunal AND wNsalle = fsa_numSalle THEN
+                                MOVE 1 TO WTrouve
+                            END-IF
+                    END-PERFORM
+                    CLOSE Fsalles
+
+                    IF Wtrouve = 1
+                        MOVE 0 TO WFin
+                        MOVE 0 TO WTrouve
+
+                        MOVE wNsalle TO fse_numSalle
+                        MOVE wNtrib TO fse_numTribunal
+
+                        START FSeances, KEY IS = fse_salle
+                        NOT INVALID KEY
+                            PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
+                                READ FSeances NEXT
+                                AT END 
+                                    MOVE 1 TO WFin
+                                NOT AT END 
+                                    IF FUNCTION INTEGER-OF-DATE(fse_date) = FUNCTION INTEGER-OF-DATE(WDate)
+                                        MOVE 1 TO WTrouve
+                                    END-IF
+                                    IF fse_numSalle = wNsalle AND fse_numTribunal = wNtrib THEN
+                                        MOVE 1 TO WFin
+                                    END-IF
+                            END-PERFORM
+                        END-START
+
+
+
+                        IF Wtrouve = 0 THEN
+                            *>MOVE WDate TO fse_date
+                            *>MOVE wNtrib TO fse_numTribunal
+                            *>MOVE wNsalle TO fse_numSalle
+                            *>MOVE wNJuge TO fse_juge
+                            REWRITE seanceTampon
+                            INVALID KEY 
+                                DISPLAY 'Erreur d ecriture'
+                            NOT INVALID KEY
+                                DISPLAY 'La séance a été modifié'
+                            END-REWRITE
+                        ELSE
+                            DISPLAY 'Salle non disponible'
+                        END-IF
+                    ELSE
+                        DISPLAY 'Salle Inexistante'
+                    END-IF
+                ELSE
+                    DISPLAY 'Fichier salle inexistant'
+                END-IF
+            ELSE 
+                DISPLAY 'Date Invalide'
+            END-IF    
         END-READ
         CLOSE FSeances
     ELSE
         DISPLAY 'Erreur d ouverture de FSeances'
-    END-IF.
-
+    END-IF
+.
 
 SupprimerSeance.
     OPEN I-O FSeances
@@ -667,40 +808,36 @@ SupprimerSeance.
         INVALID KEY
             DISPLAY 'Séance Inéxistante'
         NOT INVALID KEY
-            DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1 ou 0'
-            PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
-                ACCEPT WRep
+            OPEN I-O FConvocations
+            MOVE 0 TO WTrouve 
+            MOVE 0 TO WFin
+            PERFORM WITH TEST AFTER UNTIL WRep = 1 OR WFin = 1
+                READ FConvocations
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                IF fc_numSeance = fse_numSeance THEN    
+                    MOVE 1 TO WTrouve
+                END-IF
             END-PERFORM
-            IF WRep = 1 THEN
-                DELETE FSeances RECORD
-                DISPLAY 'Suppression effectuée'
+            CLOSE FConvocations
+            IF Wtrouve = 0 THEN
+                DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1 ou 0'
+                PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
+                    ACCEPT WRep
+                END-PERFORM
+                IF WRep = 1 THEN
+                    DELETE FSeances RECORD
+                    DISPLAY 'Suppression effectuée'
+                ELSE
+                    DISPLAY 'Suppression Annulée'
+                END-IF
             ELSE
-                DISPLAY 'Suppression Annulée'
-            END-IF
+                DISPLAY "La séance possède des convocations"
             CLOSE FSeances
     ELSE
         DISPLAY 'Erreur d ouverture de FSeances'
-    END-IF.
-
-RechercheDerniereSeance.
-    OPEN I-O FSeances
-    IF seanceCR = 00 THEN
-        MOVE 0 TO WFin
-        MOVE 0 TO WNse
-        PERFORM WITH TEST AFTER UNTIL WFin = 1
-            READ FSeances NEXT
-            AT END 
-                MOVE 1 TO WFin
-            NOT AT END
-                IF fse_numSeance > WNse THEN
-                    MOVE fse_numSeance TO WNse
-                END-IF
-            END-READ
-        END-PERFORM
-        CLOSE FSeances
-    ELSE
-        DISPLAY 'Erreur d ouverture de FSeances'
-    END-IF.
+    END-IF
+.
 
 RechercherSeancesJureVenir..
       
@@ -726,9 +863,10 @@ ConsulterAffaires.
         CLOSE FAffaires
     ELSE
         DISPLAY 'Erreur lors de l ouverture du fichier'
-    END-IF..
+    END-IF
+.
       
-      AjouterAffaire.
+AjouterAffaire.
     OPEN EXTEND FAffaires
     IF affaireCR = 35 THEN
         DISPLAY 'Création du fichier Affaire'
@@ -754,22 +892,115 @@ ConsulterAffaires.
             ACCEPT WRep
         END-PERFORM
     END-PERFORM
-    CLOSE FAffaires.
-      ModifierAffaire.
-    PERFORM RechercheAffaire
-    IF WOut = 1 THEN
-        DISPLAY 'Modification de l affaire'
-    ELSE
-        DISPLAY 'Affaire Inexistante'
-    END-IF.
+    CLOSE FAffaires
+.
 
 SupprimerAffaire.
     PERFORM RechercheAffaire
-    IF WOut = 1 THEN
-        DISPLAY 'Suppression de l affaire'
+    OPEN I-O FSeances
+    IF seanceCR = 00 THEN
+        MOVE WRef TO fse_refAffaire
+        READ FSeances
+        INVALID KEY
+            MOVE 0 TO WTrouve
+        NOT INVALID KEY 
+            MOVE 1 TO WTrouve
+        END-READ
+        CLOSE FSeances
+    END-IF
+    IF WOut = 1 AND WClasse = 0 AND WTrouve = 0 THEN
+        Display 'Souhaitez vous vraiment supprimer cette affaire ? 1 ou 0'
+        accept WRep
+        IF WRep = 1 THEN
+            OPEN INPUT FAffaires
+            IF affaireTampon <> 00 THEN
+                CLOSE FAffaires
+                OPEN INPUT FAffaires
+            END-IF
+            OPEN OUTPUT FAffairesTemp
+            PERFORM WITH TEST AFTER UNTIL WFin = 1
+                READ FAffaires
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                    IF fa_refAffaire <> WRef THEN
+                        MOVE fa_refAffaire TO fa_refAffaireTemp
+                        MOVE fa_classee TO fa_classeeTemp
+                        MOVE fa_contexte TO fa_contexteTemp
+                        WRITE affaireTamponTemp END-WRITE
+                    END-IF
+            END-PERFORM
+            CLOSE FAffaires
+            CLOSE FAffairesTemp
+            MOVE 0 TO WFin
+            OPEN OUTPUT FAffaires
+            OPEN INPUT FAffairesTemp
+            PERFORM WITH TEST AFTER UNTIL WFin = 1
+                READ FAffairesTemp
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                    MOVE fa_refAffaireTemp TO fa_refAffaire
+                    MOVE fa_classeeTemp TO fa_classee
+                    MOVE fa_contexteTemp TO fa_contexte
+                    WRITE affaireTampon END-WRITE
+            END-PERFORM
+            CLOSE FAffaires
+            CLOSE FAffairesTemp
+        ELSE 
+            DISPLAY 'Annulation'
+        END-IF
     ELSE
-        DISPLAY 'Affaire Inexistante'
-    END-IF.
+        DISPLAY 'Suppression Impossible'
+    END-IF
+.
+
+ModifierAffaire.
+    PERFORM RechercheAffaire
+    IF WOut = 1 AND WClasse = 0 THEN
+        OPEN INPUT FAffaires
+        IF affaireTampon <> 00 THEN
+            CLOSE FAffaires
+            OPEN INPUT FAffaires
+        END-IF
+        OPEN OUTPUT FAffairesTemp
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
+            READ FAffaires
+            AT END MOVE 1 TO WFin
+            NOT AT END
+                IF fa_refAffaire <> WRef THEN
+                    MOVE fa_refAffaire TO fa_refAffaireTemp
+                    MOVE fa_classee TO fa_classeeTemp
+                    MOVE fa_contexte TO fa_contexteTemp
+                    WRITE affaireTamponTemp END-WRITE
+                END-IF
+        END-PERFORM
+        CLOSE FAffaires
+        CLOSE FAffairesTemp
+        MOVE 0 TO WFin
+        OPEN OUTPUT FAffaires
+        OPEN INPUT FAffairesTemp
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
+            READ FAffairesTemp
+            AT END MOVE 1 TO WFin
+            NOT AT END
+                MOVE fa_refAffaireTemp TO fa_refAffaire
+                MOVE fa_classeeTemp TO fa_classee
+                MOVE fa_contexteTemp TO fa_contexte
+                WRITE affaireTampon END-WRITE
+        END-PERFORM
+        MOVE WRef TO fa_refAffaire
+        DISPLAY "Classée ? 1 ou 0"
+        PERFORM WITH TEST AFTER UNTIL fa_classee = 1 OR fa_classee = 0
+            ACCEPT fa_classee
+        END-PERFORM
+        DISPLAY "Nouveau Contexte: "
+        ACCEPT fa_contexte
+        WRITE affaireTampon END-WRITE
+        CLOSE FAffaires
+        CLOSE FAffairesTemp
+    ELSE
+        DISPLAY "Affaire innexistante ou déjà classée"
+    END-IF
+.
 
 RechercheAffaire.
     MOVE 0 to WOut
@@ -791,151 +1022,149 @@ RechercheAffaire.
         AT END MOVE 1 TO WFin
         NOT AT END
             IF WRef = fa_refAffaire THEN
-                MOVE 1 TO WTrouve
-                MOVE 1 TO WOut
+                MOVE 1 TO Wtrouve
                 MOVE fa_classee TO WClasse
             END-IF
     END-PERFORM
     CLOSE FAffaires
     IF WCr <> 00 THEN
         OPEN EXTEND FAffaires
-    END-IF.
+    END-IF
+.
 
 ConsulterSalles.
-MOVE 0 TO WFin
+    MOVE 0 TO WFin
 
-OPEN INPUT FSalles
-IF salleCR <> 0
-       DISPLAY 'Fichier vide'
-ELSE 
-    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
-       READ FSalles 
-       AT END MOVE 1 to WFin
-       NOT AT END
-           DISPLAY 'Numéro de salle : 'fsa_numSalle
-           DISPLAY 'Numéro de tribunal : 'fsa_numTribunal
-           DISPLAY 'Capacité de la salle : 'fsa_capacite
-           DISPLAY ' '
-       END-READ  
-    END-PERFORM
-END-IF
+    OPEN INPUT FSalles
+    IF salleCR <> 0
+        DISPLAY 'Fichier vide'
+    ELSE 
+        PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+        READ FSalles 
+        AT END MOVE 1 to WFin
+        NOT AT END
+            DISPLAY 'Numéro de salle : 'fsa_numSalle
+            DISPLAY 'Numéro de tribunal : 'fsa_numTribunal
+            DISPLAY 'Capacité de la salle : 'fsa_capacite
+            DISPLAY ' '
+        END-READ  
+        END-PERFORM
+    END-IF
 CLOSE FSalles.
 
 AjouterSalle.
-MOVE 0 TO WFin
-MOVE 0 TO WTrouve
-DISPLAY 'Numero salle'
-ACCEPT numS
-DISPLAY 'Saisir le numéro du tribunal'
-ACCEPT numT
-DISPLAY 'Saisir la capacité de la nouvelle salle'
-ACCEPT capa
+    MOVE 0 TO WFin
+    MOVE 0 TO WTrouve
+    DISPLAY 'Numero salle'
+    ACCEPT numS
+    DISPLAY 'Saisir le numéro du tribunal'
+    ACCEPT numT
+    DISPLAY 'Saisir la capacité de la nouvelle salle'
+    ACCEPT capa
 
-OPEN INPUT FSalles
-IF salleCR <> 0
-       CLOSE FSalles
-       OPEN OUTPUT FSalles
-ELSE 
-    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
-       READ FSalles 
-       AT END MOVE 1 to WFin
-       NOT AT END
-           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
-               MOVE 1 to WTrouve
-           END-IF      
-       END-READ  
-    END-PERFORM
-END-IF
-CLOSE FSalles
-
-IF WTrouve <> 1
-    OPEN Extend FSalles
-    MOVE capa TO fsa_capacite
-    MOVE numS TO fsa_numSalle
-    MOVE numT TO fsa_numTribunal
-    Write salleTampon END-Write
-    DISPLAY 'Salle créée'
+    OPEN INPUT FSalles
+    IF salleCR <> 0
+        CLOSE FSalles
+        OPEN OUTPUT FSalles
+    ELSE 
+        PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+        READ FSalles 
+        AT END MOVE 1 to WFin
+        NOT AT END
+            IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+                MOVE 1 to WTrouve
+            END-IF      
+        END-READ  
+        END-PERFORM
+    END-IF
     CLOSE FSalles
-ELSE 
-    DISPLAY 'Salle déjà existante'
+
+    IF WTrouve <> 1
+        OPEN Extend FSalles
+        MOVE capa TO fsa_capacite
+        MOVE numS TO fsa_numSalle
+        MOVE numT TO fsa_numTribunal
+        Write salleTampon END-Write
+        DISPLAY 'Salle créée'
+        CLOSE FSalles
+    ELSE 
+        DISPLAY 'Salle déjà existante'
 END-IF.
-
-
 
 ModifierSalle.
 
-MOVE 0 TO WFin
-MOVE 0 TO WTrouve
-DISPLAY ' Saisir le numéro de la salle à modifier'
-ACCEPT numS
-DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
-ACCEPT numT
+    MOVE 0 TO WFin
+    MOVE 0 TO WTrouve
+    DISPLAY ' Saisir le numéro de la salle à modifier'
+    ACCEPT numS
+    DISPLAY 'Saisir le numéro du tribunal de la salle correspondante'
+    ACCEPT numT
 
-OPEN INPUT FSalles
-IF salleCR <> 0
-       DISPLAY 'Fichier vide'       
-ELSE 
-    PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
-       READ FSalles 
-       AT END MOVE 1 to WFin
-       NOT AT END
-           IF fsa_numSalle = numS AND fsa_numTribunal = numT 
-               MOVE 1 to WTrouve
-           END-IF      
-       END-READ  
-    END-PERFORM
-END-IF
-CLOSE FSalles
-
-IF WTrouve = 1
     OPEN INPUT FSalles
-    
-    
-       DISPLAY 'Informations actuelles de la salle'
-       DISPLAY 'capacité : ' fsa_capacite
-       DISPLAY '****'
-
-
-       DISPLAY 'Saisir la capacité de la nouvelle salle'
-       ACCEPT capa
-
-OPEN OUTPUT FSallesTemp
-MOVE 0 to Wfin
-       PERFORM WITH TEST AFTER UNTIL Wfin = 1
-           READ FSalles
-           AT END MOVE 1 TO Wfin
-           NOT AT END 
-           
-            MOVE fsa_numSalle TO fsa_numSalleTemp
-            MOVE fsa_numTribunal TO fsa_numTribunalTemp
-            IF fsa_numSalle = numS AND fsa_numTribunal = numT
-            MOVE capa to fsa_capaciteTemp      
-            ELSE
-            MOVE fsa_capacite TO fsa_capaciteTemp
-            END-IF
-
-           Write salleTamponTemp END-Write
-       END-PERFORM
-    CLOSE FSallesTemp
+    IF salleCR <> 0
+        DISPLAY 'Fichier vide'       
+    ELSE 
+        PERFORM WITH TEST AFTER UNTIL WFin = 1 OR WTrouve = 1
+        READ FSalles 
+        AT END MOVE 1 to WFin
+        NOT AT END
+            IF fsa_numSalle = numS AND fsa_numTribunal = numT 
+                MOVE 1 to WTrouve
+            END-IF      
+        END-READ  
+        END-PERFORM
+    END-IF
     CLOSE FSalles
-    OPEN OUTPUT Fsalles
-    OPEN INPUT FSallesTemp
-    MOVE 0 to WFin
-    PERFORM WITH TEST AFTER UNTIL Wfin = 1
-       READ FSallesTemp
-       AT END MOVE 1 TO Wfin
-       NOT AT END
-       MOVE  fsa_numSalleTemp TO fsa_numSalle
-       MOVE fsa_numTribunalTemp TO fsa_numTribunal
-       MOVE fsa_capaciteTemp TO fsa_capacite
-       Write salleTampon END-Write
-       END-READ
-     END-PERFORM
-    DISPLAY 'Modification effectuée'
-    CLOSE FSallesTemp
-    CLOSE FSalles
-ELSE 
-    DISPLAY 'Salle non trouvée'
+
+    IF WTrouve = 1
+        OPEN INPUT FSalles
+        
+        
+        DISPLAY 'Informations actuelles de la salle'
+        DISPLAY 'capacité : ' fsa_capacite
+        DISPLAY '****'
+
+
+        DISPLAY 'Saisir la capacité de la nouvelle salle'
+        ACCEPT capa
+
+    OPEN OUTPUT FSallesTemp
+    MOVE 0 to Wfin
+        PERFORM WITH TEST AFTER UNTIL Wfin = 1
+            READ FSalles
+            AT END MOVE 1 TO Wfin
+            NOT AT END 
+            
+                MOVE fsa_numSalle TO fsa_numSalleTemp
+                MOVE fsa_numTribunal TO fsa_numTribunalTemp
+                IF fsa_numSalle = numS AND fsa_numTribunal = numT
+                MOVE capa to fsa_capaciteTemp      
+                ELSE
+                MOVE fsa_capacite TO fsa_capaciteTemp
+                END-IF
+
+            Write salleTamponTemp END-Write
+        END-PERFORM
+        CLOSE FSallesTemp
+        CLOSE FSalles
+        OPEN OUTPUT Fsalles
+        OPEN INPUT FSallesTemp
+        MOVE 0 to WFin
+        PERFORM WITH TEST AFTER UNTIL Wfin = 1
+        READ FSallesTemp
+        AT END MOVE 1 TO Wfin
+        NOT AT END
+        MOVE  fsa_numSalleTemp TO fsa_numSalle
+        MOVE fsa_numTribunalTemp TO fsa_numTribunal
+        MOVE fsa_capaciteTemp TO fsa_capacite
+        Write salleTampon END-Write
+        END-READ
+        END-PERFORM
+        DISPLAY 'Modification effectuée'
+        CLOSE FSallesTemp
+        CLOSE FSalles
+    ELSE 
+        DISPLAY 'Salle non trouvée'
 END-IF.
 
 SupprimerSalle.
@@ -1022,4 +1251,9 @@ ELSE
 END-IF.
 
 RechercherSallesLibres..
+
+
+
+
+
 
