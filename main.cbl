@@ -767,13 +767,11 @@ ModifierSeance.
                             END-PERFORM
                         END-START
 
-
-
                         IF Wtrouve = 0 THEN
-                            *>MOVE WDate TO fse_date
-                            *>MOVE wNtrib TO fse_numTribunal
-                            *>MOVE wNsalle TO fse_numSalle
-                            *>MOVE wNJuge TO fse_juge
+                            MOVE WDate TO fse_date
+                            MOVE wNtrib TO fse_numTribunal
+                            MOVE wNsalle TO fse_numSalle
+                            MOVE wNJuge TO fse_juge
                             REWRITE seanceTampon
                             INVALID KEY 
                                 DISPLAY 'Erreur d ecriture'
@@ -839,7 +837,46 @@ SupprimerSeance.
     END-IF
 .
 
-RechercherSeancesJureVenir..
+RechercherSeancesJureVenir.
+    OPEN I-O FConvocations
+    IF convoCR = 0 THEN
+        ACCEPT WDate FROM DATE YYYYMMDD
+        COMPUTE WDate = FUNCTION INTEGER-OF-DATE(WDate)
+        DISPLAY 'Entrez le nom du juré'
+        ACCEPT fc_nom
+        DISPLAY 'Entrez le prenom du juré'
+        ACCEPT fc_prenom
+        START FConvocations, KEY IS = fc_jure
+        INVALID KEY
+            DISPLAY 'Juré inexistant'
+        NOT INVALID KEY
+            PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR Wfin = 1
+                READ FConvocations NEXT
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                    IF fc_valide = 0 THEN
+                        OPEN I-O FSeances
+                        MOVE fc_numSeance TO fse_numSeance
+                        READ FSeances
+                        INVALID KEY
+                            DISPLAY 'Seance inexistante'
+                        NOT INVALID KEY
+                            IF FUNCTION INTEGER-OF-DATE(fse_date) > WDate THEN
+                                DISPLAY 'Seance n°', fse_numSeance
+                                DISPLAY 'Date: ', fse_date
+                                DISPLAY 'Référence: ', fse_refAffaire
+                                DISPLAY 'Tribunal: ', fse_numTribunal
+                                DISPLAY 'Salle: ', fse_numSalle
+                                DISPLAY ' '
+                            END-IF
+                        CLOSE FSeances
+                    END-IF
+            END-PERFORM 
+    ELSE
+        DISPLAY 'Fichier Convocation Inexistant'
+    END-IF
+
+.
       
 ConsulterAffaires.
     OPEN INPUT FAffaires
