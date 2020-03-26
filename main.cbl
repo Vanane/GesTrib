@@ -302,6 +302,21 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
        END-EVALUATE
 END-PERFORM.
 
+MenuUtilitire.
+PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
+       DISPLAY '----------------'
+       DISPLAY 'Menu Utilitaire :'
+       DISPLAY '   1 : Afficher les séances non-réglementaires'
+       DISPLAY '           avec un nombre de jurés incorrect'
+       DISPLAY '----------------'
+       DISPLAY '0 : Quitter'
+       
+       ACCEPT choixMenuSec
+       EVALUATE choixMenuSec
+           WHEN 1 PERFORM AfficherSeancesIncorrectes
+       END-EVALUATE
+END-PERFORM.
+
 ConsulterJures.
     OPEN INPUT FJures
     MOVE 0 TO WFin
@@ -1291,6 +1306,8 @@ RechercherSallesLibres..
 
 
 
+AfficherSeancesIncorrectes.
+OPEN INPUT FSalles
 
-
-
+CLOSE FSalles
+.
