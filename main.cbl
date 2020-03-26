@@ -482,7 +482,7 @@ ELSE
 
 MOVE 0 to Wtrouve
 Display 'Numéro de la séance'
-Accept numS
+Accept fse_numSeance
 
 Display ' Verification que la séance existe'
 OPEN INPUT FSeances
@@ -510,6 +510,7 @@ ELSE
 
         Display 'Verification de l''existance du juré'
 
+
         Display 'Validité initialisé'
         Move 0 to valide
 
@@ -525,11 +526,104 @@ ELSE
 END-IF
 .
 
-ModifierConvocation..
-*> Oriane
+ModifierConvocation.
+OPEN I-O FConvocations
 
-SupprimerConvocation..
-*> Oriane
+Display 'Numéro de la séance'
+Accept fse_numSeance
+
+Display ' Verification que la séance existe'
+OPEN INPUT FSeances
+
+READ FSeances KEY fse_numSeance
+IF seanceCR <> 0
+    CLOSE FSeances
+    DISPLAY 'Séance inexistante'
+    CLOSE FConvocations
+ELSE
+
+Display 'Nom juré ?'
+Accept fc_nom
+Display 'Prenom Juré ?'
+Accept fc_prenom
+
+READ FJures KEY fc_jure
+    IF jureCR <> 0
+       CLOSE FJures
+       DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
+       CLOSE FConvocations
+    ELSE
+
+    DISPLAY 'Caractère valide actuel : 'fc_valide
+    DISPLAY 'Quel est le nouveau caractère valide de cette convocation ?'
+    ACCEPT valide
+
+    MOVE valide to fc_valide
+    REWRITE convoTampon END-REWRITE
+    DISPLAY 'Convocation modifiée'
+    CLOSE FConvocations
+    CLOSE FSeances
+    END-IF
+END-IF.
+
+
+SupprimerConvocation.
+
+
+OPEN I-O FConvocations
+
+Display 'Numéro de la séance'
+Accept fse_numSeance
+
+Display ' Verification que la séance existe et futur'
+OPEN INPUT FSeances
+
+READ FSeances KEY fse_numSeance
+IF seanceCR <> 0
+    CLOSE FSeances
+    DISPLAY 'Séance inexistante'
+    CLOSE FConvocations
+ELSE
+
+IF fse_date <= dateAjd THEN
+DISPLAY 'On ne peut supprimer que les séances programmées'
+CLOSE FSeances
+CLOSE FConvocations
+
+ELSE
+
+Display 'Nom juré ?'
+Accept fc_nom
+Display 'Prenom Juré ?'
+Accept fc_prenom
+
+READ FJures KEY fc_jure
+    IF jureCR <> 0
+       CLOSE FJures
+       DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
+       CLOSE FConvocations
+    ELSE
+
+    DISPLAY 'Nom du juré :' fc_nom
+    DISPLAY 'Prenom Juré :' fc_prenom
+    DISPLAY 'Num séance :' fc_numSeance
+    DISPLAY 'Caractère valide : 'fc_valide
+
+       DISPLAY 'Souahitez vous vraiment supprimer cette convocation ? 1/0'
+        ACCEPT rep
+        IF rep = 1
+        THEN 
+       
+        DELETE FConvocations END-DELETE
+       ELSE
+       DISPLAY 'Suppression annulée'
+       END-IF
+
+    CLOSE FConvocations
+    END-IF
+.
+
+
 
 RechercherConvosNonValides..
 *> Oriane
