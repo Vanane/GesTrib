@@ -501,30 +501,53 @@ ELSE
 
     OPEN INPUT FJures
 
-    READ FJures KEY fc_jure
+    READ FJures KEY fj_cle
     IF jureCR <> 0
        CLOSE FJures
        DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
        CLOSE FConvocations
     ELSE
 
-        Display 'Verification de l''existance du juré'
+        Display 'Verification de l''existance et dispoibiité du juré'
+        MOVE 0 to Wfin
+        MOVE 0 to Wtrouve
 
 
-        Display 'Validité initialisé'
-        Move 0 to valide
+        START FConvocations KEY EQUALS fc_jure
+        INVALID Key Display "Clé invalide"
+        NOT INVALID KEY
+           PERFORM with test after until Wfin = 1 OR Wtrouve = 1
+           READ FConvocations NEXT
+           NOT AT END 
+                IF fc_jure <> fj_cle
+                MOVE 1 to Wfin
+                ELSE
+                    if fc_numSeance = fse_numSeance
+                    Move 1 to Wtrouve
+                    DISPLAY "Convocation déjà envoyée pour ce juré"
+                    end-if
+                end-if
+           END-READ
+           END-PERFORM
 
-        move numS TO fc_numSeance
-        Move nomJure TO fc_nom
-        MOvE prenomJure TO fc_prenom
-        MOVE valide TO fc_valide
 
-        Write convoTampon END-Write
-            DISPLAY 'Convocation créée'
-            CLOSE FConvocations
-    END-IF
+            IF Wtrouve = 0
+            
+            Display 'Validité initialisé'
+            Move 0 to valide
+    
+            move numS TO fc_numSeance
+            Move nomJure TO fc_nom
+            MOvE prenomJure TO fc_prenom
+            MOVE valide TO fc_valide
+    
+            Write convoTampon END-Write
+                DISPLAY 'Convocation créée'
+                CLOSE FConvocations
+           END-IF
+       END-IF
 END-IF
-.
+END-IF.
 
 ModifierConvocation.
 OPEN I-O FConvocations
