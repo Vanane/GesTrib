@@ -112,6 +112,7 @@ WORKING-STORAGE SECTION.
 
 
 77 WFin PIC 9(1).
+77 WFin1 PIC 9(1).
 77 WRep pic 9(1).
 77 WTrouve PIC 9(1).
 77 WRef PIC A(9).
@@ -476,6 +477,7 @@ AjouterConvocation.
 
 OPEN I-O FConvocations
 IF convoCR <> 0
+    OPEN INPUT FConvocations
     CLOSE FConvocations
     OPEN OUTPUT FConvocations
 ELSE
@@ -592,7 +594,6 @@ END-IF.
 
 SupprimerConvocation.
 
-
 OPEN I-O FConvocations
 
 Display 'Numéro de la séance'
@@ -648,8 +649,33 @@ READ FJures KEY fc_jure
 
 
 
-RechercherConvosNonValides..
-*> Oriane
+RechercherConvosNonValides.
+
+OPEN INPUT FConvocations
+DISPLAY "Recherche des convocations non valides..."
+IF convoCR = 00 THEN
+       MOVE 0 To WFin
+       DISPLAY ' '
+       PERFORM WITH TEST AFter UNTIL Wfin = 1
+       READ FConvocations NEXT
+       AT END
+           MOVE 1 To WFin
+       NOT AT END
+
+        IF fc_valide = 0
+           DISPLAY ' Nom du juré : 'fc_nom
+           DISPLAY 'Prénom du juré : 'fc_prenom
+           DISPLAY ' Numéro de la séance correspondante ' fc_numSeance
+           DISPLAY ' '
+        END-IF
+       END-PERFORM
+       CLOSE FConvocations
+ELSE
+DISPLAY 'Erreur ouverture fichier'
+END-IF.
+
+
+
 
 ConsulterSeances.
     OPEN I-O FSeances
@@ -865,6 +891,10 @@ SupprimerAffaire.
     ELSE
         DISPLAY 'Affaire Inexistante'
     END-IF.
+
+
+
+
 
 RechercheAffaire.
     MOVE 0 to WOut
@@ -1116,5 +1146,55 @@ ELSE
     DISPLAY 'Salle non trouvée'
 END-IF.
 
-RechercherSallesLibres..
+RechercherSallesLibres.
+
+*> Pour chaque salle (LireSeq)
+*> On instancie un bool a faux
+*> Lecture de zone sur fse_numSalle : Si date = wdate on read salle next et bool = vrai
+*> Si bool = Faux à la fin de la zone on affiche.
+
+
+OPEN INPUT FSalles
+IF salleCR <> 00
+       DISPLAY 'Erreur ouverture fichier'
+ELSE
+       Display "Date choisie ?"
+       Accept wdate
+       
+       OPEN INPUT FSeances
+       PERFORM WITH TEST AFTER UNTIL WFin = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+       
+            MOVE 0 TO Wtrouve
+            START FSeances KEY EQUALS fse_numSalle
+               INVALID KEY
+               DISPLAY "Clé invalide"
+                NOT INVALID KEY 
+                PERFORM with test after until Wfin1 = 1 OR Wtrouve = 1
+                READ FSeances NEXT
+                NOT AT END
+                   IF fse_numSalle <> fsa_numSalle
+                   MOVE 1 to Wfin1
+                   ELSE
+                       If fse_date = wdate
+                           MOVE 1 to Wtrouve
+                       END-IF
+                    END-IF
+                END-READ
+                END-PERFORM
+
+                IF Wtrouve = 0
+                Display "Numéro de salle : "fsa_numSalle
+                DISPLAY "Numero tribunal " fsa_numTribunal
+                DISPLAY "Capacité de la salle :" fsa_capacite
+                Display " "
+                END-IF
+                       
+       END-READ  
+    END-PERFORM
+    CLOSE FSeances
+END-IF
+CLOSE FSalles.
 
