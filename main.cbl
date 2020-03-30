@@ -17,6 +17,7 @@ SELECT FConvocations ASSIGN TO "convocations.dat"
     ACCESS IS DYNAMIC
     FILE STATUS IS convoCR
     RECORD KEY IS fc_cle
+    ALTERNATE RECORD KEY IS fc_numSeance WITH DUPLICATES
     ALTERNATE RECORD KEY IS fc_jure WITH DUPLICATES.
 
 SELECT FSeances ASSIGN TO "seances.dat"
@@ -121,8 +122,10 @@ WORKING-STORAGE SECTION.
 77 capa PIC 9(3).
 77 rep PIC 9(1).
 77 valide PIC 9(1).
+77 nbCount PIC 9(4).
 
 77 WFin PIC 9(1).
+77 WFin2 PIC 9(1).
 77 wTtrib PIC A(25).
 77 wNJuge PIC A(25).
 77 wNsalle PIC 9(2).
@@ -176,6 +179,7 @@ PERFORM WITH TEST AFTER UNTIL choixMenu = 0
        DISPLAY '   3 : Gestion Séances'
        DISPLAY '   4 : Gestion Affaires'
        DISPLAY '   5 : Gestion Salles'
+       DISPLAY '   6 : Outils'
        DISPLAY '----------------'
        DISPLAY '0 : Quitter'
        
@@ -186,6 +190,7 @@ PERFORM WITH TEST AFTER UNTIL choixMenu = 0
            WHEN 3 PERFORM MenuGestionSeances
            WHEN 4 PERFORM MenuGestionAffaires
            WHEN 5 PERFORM MenuGestionSalles
+           WHEN 6 PERFORM MenuUtilitaire
        END-EVALUATE
 END-PERFORM.
 
@@ -299,6 +304,21 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
            WHEN 3 PERFORM ModifierSalle
            WHEN 4 PERFORM SupprimerSalle
            WHEN 5 PERFORM RechercherSallesLibres
+       END-EVALUATE
+END-PERFORM.
+
+MenuUtilitaire.
+PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
+       DISPLAY '----------------'
+       DISPLAY 'Menu Utilitaire :'
+       DISPLAY '   1 : Afficher les séances non-réglementaires'
+       DISPLAY '           * Séances avec un nombre de jurés incorrect'
+       DISPLAY '----------------'
+       DISPLAY '0 : Quitter'
+       
+       ACCEPT choixMenuSec
+       EVALUATE choixMenuSec
+           WHEN 1 PERFORM AfficherSeancesIncorrectes
        END-EVALUATE
 END-PERFORM.
 
@@ -493,7 +513,7 @@ ConsulterConvocations.
     IF convoCR <> 0
     DISPLAY 'Fichier vide'
     ELSE
-    MOVE 0 TO Wfin
+    MOVE 0 TO WFin
         PERFORM WITH TEST AFTER UNTIL WFin = 1
         READ FConvocations 
         AT END MOVE 1 to WFin
@@ -956,7 +976,7 @@ RechercherSeancesJureVenir.
         INVALID KEY
             DISPLAY 'Juré inexistant'
         NOT INVALID KEY
-            PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR Wfin = 1
+            PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
                 READ FConvocations NEXT
                 AT END MOVE 1 TO WFin
                 NOT AT END
@@ -1323,10 +1343,10 @@ ModifierSalle.
         ACCEPT capa
 
     OPEN OUTPUT FSallesTemp
-    MOVE 0 to Wfin
-        PERFORM WITH TEST AFTER UNTIL Wfin = 1
+    MOVE 0 to WFin
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
             READ FSalles
-            AT END MOVE 1 TO Wfin
+            AT END MOVE 1 TO WFin
             NOT AT END 
             
                 MOVE fsa_numSalle TO fsa_numSalleTemp
@@ -1344,9 +1364,9 @@ ModifierSalle.
         OPEN OUTPUT Fsalles
         OPEN INPUT FSallesTemp
         MOVE 0 to WFin
-        PERFORM WITH TEST AFTER UNTIL Wfin = 1
+        PERFORM WITH TEST AFTER UNTIL WFin = 1
         READ FSallesTemp
-        AT END MOVE 1 TO Wfin
+        AT END MOVE 1 TO WFin
         NOT AT END
         MOVE  fsa_numSalleTemp TO fsa_numSalle
         MOVE fsa_numTribunalTemp TO fsa_numTribunal
@@ -1456,5 +1476,46 @@ RechercherSallesLibres..
 
 
 
+
+
+AfficherSeancesIncorrectes.
+OPEN INPUT FSeances
+OPEN INPUT FConvocations
+MOVE 0 TO WFin
+PERFORM WITH TEST AFTER UNTIL WFin = 1
+    READ FSeances NEXT
+    AT END MOVE 1 TO WFin
+    NOT AT END
+       MOVE 0 TO nbCount
+       MOVE fse_numSeance TO fc_numSeance
+       START FConvocations KEY EQUALS fc_numSeance
+       INVALID KEY
+           DISPLAY 'La séance n° ', fse_numSeance, ' est invalide (aucun juré).'
+       NOT INVALID KEY
+           MOVE 0 TO WFin2
+           PERFORM WITH TEST AFTER UNTIL WFin2 = 1
+               READ FConvocations NEXT
+               NOT AT END
+                   IF fc_numSeance <> fse_numSeance
+                       MOVE 1 TO WFin2
+                   ELSE
+                       ADD 1 TO nbCount                   
+                   END-IF 
+               END-READ 
+           END-PERFORM
+       END-START
+
+       IF nbCount < 3
+       DISPLAY 'La séance n° ', fse_numSeance, ' est invalide (', nbCount, ' jurés au lieu de 3 minimum).'
+       ELSE
+           IF nbCount > 6
+              DISPLAY 'La séance n° ', fse_numSeance, ' est invalide (', nbCount, ' jurés au lieu de 6 maximum).'
+           END-IF
+       END-IF
+    END-READ
+END-PERFORM
+
+CLOSE FConvocations
+CLOSE FSeances.
 
 
