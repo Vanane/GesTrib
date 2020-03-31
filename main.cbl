@@ -163,12 +163,12 @@ END-EVALUATE.
 MenuJure.
     DISPLAY '----------------'
     DISPLAY 'Menu Juré:'
-    DISPLAY '  1 : Consulter les prochaines séances'
+    DISPLAY '  1 : Consulter vos prochaines séances'
     DISPLAY '----------------'
     DISPLAY '0 : Quitter'  
     ACCEPT choixMenu
     EVALUATE choixMenu
-        WHEN 1 PERFORM ConsulterSeances
+        WHEN 1 PERFORM ConsulterProchainesSeances
 END-EVALUATE.
 
 MenuAdmin.
@@ -322,6 +322,63 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
            WHEN 1 PERFORM AfficherSeancesIncorrectes
        END-EVALUATE
 END-PERFORM.
+
+ConsulterProchainesSeances.
+    OPEN OUTPUT FSeances
+    DISPLAY seanceCR
+    IF seanceCR = 0
+       OPEN OUTPUT FConvocations
+       MOVE 0 TO WFin
+    DISPLAY convoCR
+
+       IF convoCR = 0
+           DISPLAY "Saisissez votre nom :"
+           ACCEPT nomJure
+           DISPLAY "Saisissez votre prénom :"
+           ACCEPT prenomJure
+           MOVE 0 TO WDate
+           ACCEPT dateAjd FROM DATE YYYYMMDD
+           MOVE nomJure TO fc_nom
+           MOVE prenomJure TO fc_prenom
+           START FConvocations KEY EQUALS fc_jure
+           INVALID KEY
+              DISPLAY "Ce juré n''existe pas"
+           NOT INVALID KEY
+              PERFORM WITH TEST AFTER UNTIL WFin = 1
+                  READ FConvocations NEXT
+                  NOT AT END
+                       IF fc_nom <> nomJure OR fc_prenom <> prenomJure
+                           MOVE 1 TO WFin
+                       ELSE
+                           MOVE fc_numSeance TO fse_numSeance
+                           READ FSeances KEY IS fse_numSeance
+                           NOT INVALID KEY
+                               IF WDate < fse_date
+                                   MOVE fse_date TO WDate
+                                   MOVE fse_numSeance TO numS
+                               END-IF
+                           END-READ
+                       END-IF 
+                  END-READ
+              END-PERFORM
+           END-START
+           IF WDate >= dateAjd
+               MOVE numS TO fse_numSeance
+               READ FSeances KEY IS fse_numSeance
+               NOT INVALID KEY
+                   DISPLAY "Votre prochaine séance est la n°", fse_numSeance
+                   DISPLAY "Elle aura lieu en salle ", fse_numSalle, " tribunal ", fse_numTribunal
+                   DISPLAY "Pour l'affaire n°", fse_refAffaire
+                   DISPLAY "Le ", fse_date, "."
+               END-READ
+           ELSE
+               DISPLAY "Vous n''avez pas de prochaine séance."
+           END-IF
+       END-IF
+       CLOSE FConvocations
+   END-IF
+   CLOSE FSeances.
+       
 
 ConsulterJures.
     OPEN INPUT FJures
