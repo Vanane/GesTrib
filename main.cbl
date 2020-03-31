@@ -130,6 +130,7 @@ WORKING-STORAGE SECTION.
 77 wNJuge PIC A(25).
 77 wNsalle PIC 9(2).
 77 wNtrib PIC 9(3).
+77 WFin1 PIC 9(1).
 77 WRep pic 9(1).
 77 WTrouve PIC 9(1).
 77 WRef PIC A(9).
@@ -529,12 +530,12 @@ ConsulterConvocations.
 CLOSE FConvocations.
 
 AjouterConvocation.
-
-    OPEN I-O FConvocations
-    IF convoCR <> 0
-        CLOSE FConvocations
-        OPEN OUTPUT FConvocations
-    ELSE
+OPEN I-O FConvocations
+IF convoCR <> 0
+    OPEN INPUT FConvocations
+    CLOSE FConvocations
+    OPEN OUTPUT FConvocations
+ELSE
 
 MOVE 0 to Wtrouve
 Display 'Numéro de la séance'
@@ -555,31 +556,54 @@ Accept fse_numSeance
         Display 'Prénom du juré'
         accept prenomJure
 
-        OPEN INPUT FJures
+    READ FJures KEY fj_cle
+    IF jureCR <> 0
+       CLOSE FJures
+       DISPLAY 'Erreur invalide ! Juré non renseigné dans la liste des jurés'
+       CLOSE FConvocations
+    ELSE
 
-        READ FJures KEY fc_jure
-        IF jureCR <> 0
-        CLOSE FJures
-        DISPLAY 'Erreur invalide !Juré non renseigné dans la liste des jurés'
-        CLOSE FConvocations
-        ELSE
+        Display 'Verification de l''existence et disponibilité du juré'
+        MOVE 0 to Wfin
+        MOVE 0 to Wtrouve
 
-            Display 'Verification de l''existance du juré'
+            Display 'Verification de l''existence du juré'
 
+        START FConvocations KEY EQUALS fc_jure
+        INVALID Key Display "Clé invalide"
+        NOT INVALID KEY
+           PERFORM with test after until Wfin = 1 OR Wtrouve = 1
+           READ FConvocations NEXT
+           NOT AT END 
+                IF fc_jure <> fj_cle
+                MOVE 1 to Wfin
+                ELSE
+                    if fc_numSeance = fse_numSeance
+                    Move 1 to Wtrouve
+                    DISPLAY "Convocation déjà envoyée pour ce juré"
+                    end-if
+                end-if
+           END-READ
+           END-PERFORM
+
+
+            IF Wtrouve = 0
+            
             Display 'Validité initialisé'
             Move 0 to valide
-
+    
             move numS TO fc_numSeance
             Move nomJure TO fc_nom
             MOvE prenomJure TO fc_prenom
             MOVE valide TO fc_valide
-
+    
             Write convoTampon END-Write
                 DISPLAY 'Convocation créée'
                 CLOSE FConvocations
-        END-IF
-    END-IF
-.
+           END-IF
+       END-IF
+END-IF
+END-IF.
 
 ModifierConvocation.
 OPEN I-O FConvocations
@@ -623,7 +647,6 @@ END-IF.
 
 
 SupprimerConvocation.
-
 
 OPEN I-O FConvocations
 
@@ -680,8 +703,33 @@ READ FJures KEY fc_jure
 
 
 
-RechercherConvosNonValides..
-*> Oriane
+RechercherConvosNonValides.
+
+OPEN INPUT FConvocations
+DISPLAY "Recherche des convocations non valides..."
+IF convoCR = 00 THEN
+       MOVE 0 To WFin
+       DISPLAY ' '
+       PERFORM WITH TEST AFter UNTIL Wfin = 1
+       READ FConvocations NEXT
+       AT END
+           MOVE 1 To WFin
+       NOT AT END
+
+        IF fc_valide = 0
+           DISPLAY ' Nom du juré : 'fc_nom
+           DISPLAY 'Prénom du juré : 'fc_prenom
+           DISPLAY ' Numéro de la séance correspondante ' fc_numSeance
+           DISPLAY ' '
+        END-IF
+       END-PERFORM
+       CLOSE FConvocations
+ELSE
+DISPLAY 'Erreur ouverture fichier'
+END-IF.
+
+
+
 
 ConsulterSeances.
     OPEN I-O FSeances
@@ -1075,6 +1123,23 @@ AjouterAffaire.
 .
 
 SupprimerAffaire.
+    PERFORM RechercheAffaire
+    IF WOut = 1 THEN
+        DISPLAY 'Suppression de l affaire'
+    ELSE
+        DISPLAY 'Affaire Inexistante'
+    END-IF.
+
+
+RechercheAffaire.
+    MOVE 0 to WOut
+    MOVE 0 to WFin
+    MOVE 0 to WTrouve
+    MOVE 0 TO WCr
+    MOVE 0 TO WClasse
+    MOVE '00000000' TO WRef
+    DISPLAY 'Référence de l Affaire: '
+    ACCEPT WRef
     OPEN INPUT FAffaires
     IF affaireCR = 0 THEN
         MOVE 0 TO WTrouve
@@ -1464,7 +1529,57 @@ ELSE
     DISPLAY 'Salle non trouvée'
 END-IF.
 
-RechercherSallesLibres..
+RechercherSallesLibres.
+
+*> Pour chaque salle (LireSeq)
+*> On instancie un bool a faux
+*> Lecture de zone sur fse_numSalle : Si date = wdate on read salle next et bool = vrai
+*> Si bool = Faux à la fin de la zone on affiche.
+
+
+OPEN INPUT FSalles
+IF salleCR <> 00
+       DISPLAY 'Erreur ouverture fichier'
+ELSE
+       Display "Date choisie ?"
+       Accept wdate
+       
+       OPEN INPUT FSeances
+       PERFORM WITH TEST AFTER UNTIL WFin = 1
+       READ FSalles 
+       AT END MOVE 1 to WFin
+       NOT AT END
+       
+            MOVE 0 TO Wtrouve
+            START FSeances KEY EQUALS fse_numSalle
+               INVALID KEY
+               DISPLAY "Clé invalide"
+                NOT INVALID KEY 
+                PERFORM with test after until Wfin1 = 1 OR Wtrouve = 1
+                READ FSeances NEXT
+                NOT AT END
+                   IF fse_numSalle <> fsa_numSalle
+                   MOVE 1 to Wfin1
+                   ELSE
+                       If fse_date = wdate
+                           MOVE 1 to Wtrouve
+                       END-IF
+                    END-IF
+                END-READ
+                END-PERFORM
+
+                IF Wtrouve = 0
+                Display "Numéro de salle : "fsa_numSalle
+                DISPLAY "Numero tribunal " fsa_numTribunal
+                DISPLAY "Capacité de la salle :" fsa_capacite
+                Display " "
+                END-IF
+                       
+       END-READ  
+    END-PERFORM
+    CLOSE FSeances
+END-IF
+CLOSE FSalles.
 
 
 
