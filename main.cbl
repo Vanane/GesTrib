@@ -55,7 +55,7 @@ FD FJures.
 FD FConvocations.
 01 convoTampon.
     02 fc_cle.
-       03 fc_numSeance PIC 9(2).
+       03 fc_numSeance PIC 9(9).
        03 fc_jure.
           04 fc_nom PIC A(25).
           04 fc_prenom PIC A(25).
@@ -63,7 +63,7 @@ FD FConvocations.
 
 FD FSeances.
 01 seanceTampon.
-    02 fse_numSeance PIC 9(2).
+    02 fse_numSeance PIC 9(9).
     02 fse_typeTribunal PIC A(25).
     02 fse_juge PIC A(25).
     02 fse_date PIC 9(8).
@@ -111,7 +111,7 @@ WORKING-STORAGE SECTION.
 77 prenomJure PIC A(25).
 77 derniereSalle PIC 9(2).
 
-77 numS PIC 9(2).
+77 numS PIC 9(9).
 77 numT PIC 9(3).
 77 capa PIC 9(3).
 77 rep PIC 9(1).
@@ -130,7 +130,7 @@ WORKING-STORAGE SECTION.
 77 WRef PIC A(9).
 77 WOut PIC 9(1).
 77 WCr PIC 9(2).
-77 WNse PIC 9(2).
+77 WNse PIC 9(9).
 77 WClasse PIC 9(1).
 77 WDate PIC 9(8).
 
