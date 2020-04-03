@@ -133,7 +133,7 @@ WORKING-STORAGE SECTION.
 77 WNse PIC 9(9).
 77 WClasse PIC 9(1).
 77 WDate PIC 9(8).
-
+77 WAge PIC 9(3).
 01 dateAjd PIC 9(8).
 
 PROCEDURE DIVISION.
@@ -389,42 +389,45 @@ ConsulterJures.
         END-PERFORM
     END-IF
 CLOSE FJures.
-*> Alvin
 
 AjouterJure.
-*> Alvin
-    DISPLAY 'Saisir le nom et le prénom du juré :'
+    DISPLAY 'Saisir le nom, puis le prénom du juré :'
     ACCEPT fj_nom
     ACCEPT fj_prenom
-
-    OPEN INPUT FJures
-    READ FJures
-    KEY IS fj_cle
-    END-READ 
-    IF jureCR = 0
-        DISPLAY 'Ce juré existe déjà.'
+    DISPLAY 'Saisissez l''âge du juré :'
+    ACCEPT WAge
+    IF WAge < 21
+        DISPLAY 'Cette personne n''a pas l''âge requis pour être juré ! (21 ans minimum)'
     ELSE
-        CLOSE FJures
-        OPEN I-O FJures
-        DISPLAY 'CR : ', jureCR
-        *>Vérification de l'existence du fichier
-        IF jureCR <> 0
-        CLOSE FJures
-        OPEN OUTPUT FJures
-        END-IF
-        DISPLAY 'CR : ', jureCR
-        DISPLAY 'Saisir le numéro de département :'
-        ACCEPT fj_departement
-        DISPLAY 'Saisir l''adresse :'
-        ACCEPT fj_adresse
-        WRITE jureTampon
-        INVALID KEY
-            DISPLAY "zut."
-        NOT INVALID KEY
-            DISPLAY "Ajouté !"
-        END-WRITE
-    END-IF
-CLOSE FJures.
+       OPEN INPUT FJures
+       READ FJures
+       KEY IS fj_cle
+       END-READ 
+       IF jureCR = 0
+           DISPLAY 'Ce juré existe déjà.'
+       ELSE
+           CLOSE FJures
+           OPEN I-O FJures
+           DISPLAY 'CR : ', jureCR
+           *>Vérification de l'existence du fichier
+           IF jureCR <> 0
+           CLOSE FJures
+           OPEN OUTPUT FJures
+           END-IF
+           DISPLAY 'CR : ', jureCR
+           DISPLAY 'Saisir le numéro de département :'
+           ACCEPT fj_departement
+           DISPLAY 'Saisir l''adresse :'
+           ACCEPT fj_adresse
+           WRITE jureTampon
+           INVALID KEY
+               DISPLAY "zut."
+           NOT INVALID KEY
+               DISPLAY "Ajouté !"
+           END-WRITE
+       END-IF
+       CLOSE FJures
+    END-IF.
 
 ModifierJure.
     OPEN INPUT FJures
