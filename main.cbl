@@ -34,6 +34,11 @@ SELECT FSallesTemp ASSIGN TO "sallesTemp.dat"
     ACCESS IS SEQUENTIAL
     FILE STATUS IS salleTempCR.
 
+SELECT FAffairesTemp ASSIGN TO "affaireTemp.dat"
+    ORGANIZATION SEQUENTIAL
+    ACCESS IS SEQUENTIAL
+    FILE STATUS IS affairesTempCR.
+
 SELECT FSeances ASSIGN TO "seances.dat"
     ORGANIZATION INDEXED
     ACCESS IS DYNAMIC
@@ -1139,8 +1144,8 @@ AjouterAffaire.
     IF affaireCR = 35 THEN
         DISPLAY 'Création du fichier Affaire'
         OPEN INPUT FAffaires
-    END-IF
     CLOSE FAffaires
+    END-IF
     MOVE 0 TO WRep
     PERFORM WITH TEST AFTER UNTIL WRep = 0
         MOVE 0 TO WFin
@@ -1158,6 +1163,7 @@ AjouterAffaire.
                 END-IF
         END-PERFORM
         CLOSE FAffaires
+
         OPEN EXTEND FAffaires
         IF WTrouve = 0 THEN
             MOVE WRef TO fa_refAffaire
