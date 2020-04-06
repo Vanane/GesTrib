@@ -1140,11 +1140,12 @@ ConsulterAffaires.
 .
       
 AjouterAffaire.
-    OPEN EXTEND FAffaires
+    OPEN INPUT FAffaires
     IF affaireCR = 35 THEN
         DISPLAY 'Création du fichier Affaire'
+        OPEN OUTPUT FAffaires
+        CLOSE FAffaires
         OPEN INPUT FAffaires
-    CLOSE FAffaires
     END-IF
     MOVE 0 TO WRep
     PERFORM WITH TEST AFTER UNTIL WRep = 0
