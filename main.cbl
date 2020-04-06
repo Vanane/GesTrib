@@ -378,10 +378,40 @@ ConsulterProchainesSeances.
        CLOSE FConvocations
    END-IF
    CLOSE FSeances.
+
+ConsulterSeancesAffaire.
+OPEN OUTPUT FSeances
+MOVE 0 To Wfin
+IF seanceCR <> 0
+       DISPLAY 'Fichier vide'
+ELSE
+Display 'Reference affaire ?'
+ACCEPT WRef
+Move WRef to fse_refAffaire
+START FSeances KEY EQUALS fse_refAffaire
+        INVALID Key Display "Clé invalide"
+        NOT INVALID KEY
+           PERFORM with test after until Wfin = 1
+           READ FSeances NEXT
+           NOT AT END 
+                IF fse_refAffaire <> wRef
+                MOVE 1 to Wfin
+                ELSE
+                    DISPLAY "Numéro Séance " fse_numSeance
+                    Display "Numero Tribunal " fse_numTribunal
+                    DISPLAY "Numéro de la salle" fse_numSalle
+                    DISPLAY "Juge en charge de la séance " fse_juge
+                    DISPLAY ""
+                    
+                end-if
+           END-READ
+           END-PERFORM
+END-IF
+CLOSE FSeances.
        
 
 ConsulterJures.
-    OPEN INPUT FJures
+    OPEN OUTPUT FJures
     MOVE 0 TO WFin
     IF jureCR <> 0
         DISPLAY 'Fichier vide !'
@@ -582,12 +612,11 @@ ConsulterConvocations.
     END-IF
 CLOSE FConvocations.
 
-
 AjouterConvocation.
-    OPEN I-O FConvocations
-    IF convoCR <> 0
-        OPEN INPUT FConvocations
-        CLOSE FConvocations
+OPEN I-O FConvocations
+IF convoCR <> 0
+    OPEN INPUT FConvocations
+    CLOSE FConvocations
         OPEN I-O FConvocations
     END-IF
     DISPLAY 'Numéro de la séance'
@@ -628,7 +657,8 @@ AjouterConvocation.
         CLOSE FJures
     END-READ
     CLOSE FSeances.
-        
+
+
 ModifierConvocation.
 OPEN I-O FConvocations
 
@@ -812,7 +842,8 @@ AjouterSeance.
         ACCEPT wTtrib
         DISPLAY 'Nom du juge: '
         ACCEPT wNJuge
-
+        
+        Display "la date de la seance doit être programmé au moins une semaine en avance"
         DISPLAY 'Date de la séance (YYYYMMDD): '
         ACCEPT fse_date
         COMPUTE fse_date = FUNCTION INTEGER-OF-DATE(fse_date)
