@@ -1126,9 +1126,9 @@ ConsulterAffaires.
             NOT AT END
                 DISPLAY 'Référence: ', fa_refAffaire
                 IF fa_classee = 0 THEN
-                    DISPLAY 'Non Classée'
+                    DISPLAY 'Classée: Non'
                 ELSE
-                    DISPLAY 'Classée'
+                    DISPLAY 'Classée: Oui'
                 END-IF
                 DISPLAY 'Contexte: ', fa_contexte
                 DISPLAY ' '
@@ -1145,7 +1145,6 @@ AjouterAffaire.
         DISPLAY 'Création du fichier Affaire'
         OPEN OUTPUT FAffaires
         CLOSE FAffaires
-        OPEN INPUT FAffaires
     END-IF
     MOVE 0 TO WRep
     PERFORM WITH TEST AFTER UNTIL WRep = 0
@@ -1158,7 +1157,6 @@ AjouterAffaire.
             READ FAffaires
             AT END MOVE 1 TO WFin
             NOT AT END
-                display 'COUCOU ', fa_refAffaire
                 IF WRef = fa_refAffaire THEN
                     MOVE 1 TO WTrouve
                 END-IF
@@ -1175,41 +1173,24 @@ AjouterAffaire.
         ELSE
             DISPLAY 'Affaire déjà existante'
         END-IF
+        CLOSE FAffaires
         PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
             DISPLAY 'Souhaitez vous continuer ? 1 ou 0'
             ACCEPT WRep
         END-PERFORM
     END-PERFORM
-    CLOSE FAffaires
 .
 
 SupprimerAffaire.
-    PERFORM RechercheAffaire
-    IF WOut = 1 THEN
-        DISPLAY 'Suppression de l affaire'
-    ELSE
-        DISPLAY 'Affaire Inexistante'
-    END-IF.
-
-
-RechercheAffaire.
-    MOVE 0 to WOut
-    MOVE 0 to WFin
-    MOVE 0 to WTrouve
-    MOVE 0 TO WCr
-    MOVE 0 TO WClasse
-    MOVE '00000000' TO WRef
-    DISPLAY 'Référence de l Affaire: '
-    ACCEPT WRef
     OPEN INPUT FAffaires
     IF affaireCR = 0 THEN
-        MOVE 0 TO WTrouve
+        MOVE 0 to Wtrouve
         MOVE 0 TO WFin
-        DISPLAY "Reference de l Affaire"
+        DISPLAY 'Référence de l Affaire: '
         ACCEPT WRef
         PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
             READ FAffaires
-            AT END MOVE 1 TO WFin 
+            AT END MOVE 1 TO WFin
             NOT AT END
                 IF WRef = fa_refAffaire THEN
                     MOVE 1 TO WTrouve
@@ -1217,70 +1198,36 @@ RechercheAffaire.
                 END-IF
         END-PERFORM
         CLOSE FAffaires
-        IF Wtrouve = 1 AND WClasse = 0 THEN 
-            MOVE 0 TO WTrouve
-            OPEN I-O FSeances
-            IF seanceCR = 00 THEN
-                MOVE WRef TO fse_refAffaire
-                READ FSeances
-                INVALID KEY
-                    MOVE 0 TO WTrouve
-                NOT INVALID KEY 
-                    MOVE 1 TO WTrouve
-                END-READ
-                CLOSE FSeances
-            END-IF
-            IF Wtrouve = 0 THEN
-                OPEN INPUT FAffaires
-                OPEN OUTPUT FAffairesTemp
-                PERFORM WITH TEST AFTER UNTIL WFin = 1
-                    READ FAffaires
-                    AT END MOVE 1 TO WFin
-                    NOT AT END
-                        IF fa_refAffaire <> WRef THEN
-                            MOVE fa_refAffaire TO fa_refAffaireTemp
-                            MOVE fa_classee TO fa_classeeTemp
-                            MOVE fa_contexte TO fa_contexteTemp
-                            WRITE affaireTamponTemp END-WRITE
-                        ELSE
-                            DISPLAY "Reference: ", fa_refAffaire
-                            IF fa_classee = 1 
-                                DISPLAY "Classée"
-                            ELSE
-                                DISPLAY "Non Classée"
-                            END-IF
-                            DISPLAY "Contexte: ", fa_contexte
-                        END-IF
-                END-PERFORM
-                CLOSE FAffaires
-                CLOSE FAffairesTemp
-                MOVE 0 TO WRep
-                Display 'Souhaitez vous vraiment supprimer cette affaire ? 1 ou 0'
-                PERFORM WITH TEST AFTER UNTIL WRep = 1 OR WRep = 0
-                    accept WRep
-                END-PERFORM
-                IF WRep = 1 THEN
-                    MOVE 0 TO WFin
-                    OPEN OUTPUT FAffaires
-                    OPEN INPUT FAffairesTemp
-                    PERFORM WITH TEST AFTER UNTIL WFin = 1
-                        READ FAffairesTemp
-                        AT END MOVE 1 TO WFin
-                        NOT AT END
-                            MOVE fa_refAffaireTemp TO fa_refAffaire
-                            MOVE fa_classeeTemp TO fa_classee
-                            MOVE fa_contexteTemp TO fa_contexte
-                            WRITE affaireTampon END-WRITE
-                    END-PERFORM
-                    CLOSE FAffaires
-                    CLOSE FAffairesTemp
-                    DISPLAY "Suppression effectuée"
-                ELSE 
-                    DISPLAY 'Annulation'
-                END-IF
-            ELSE
-                DISPLAY 'Suppression Impossible'
-            END-IF
+        IF WTrouve = 1 AND wClasse = 0 THEN
+            OPEN INPUT FAffaires
+            OPEN OUTPUT FAffairesTemp
+            PERFORM WITH TEST AFTER UNTIL WFin = 1
+                READ FAffaires
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                    IF fa_refAffaire <> WRef THEN
+                        MOVE fa_refAffaire TO fa_refAffaireTemp
+                        MOVE fa_classee TO fa_classeeTemp
+                        MOVE fa_contexte TO fa_contexteTemp
+                        WRITE affaireTamponTemp END-WRITE
+                    END-IF
+            END-PERFORM
+            CLOSE FAffaires
+            CLOSE FAffairesTemp      
+            MOVE 0 TO WFin
+            OPEN OUTPUT FAffaires
+            OPEN INPUT FAffairesTemp
+            PERFORM WITH TEST AFTER UNTIL WFin = 1
+                READ FAffairesTemp
+                AT END MOVE 1 TO WFin
+                NOT AT END
+                    MOVE fa_refAffaireTemp TO fa_refAffaire
+                    MOVE fa_classeeTemp TO fa_classee
+                    MOVE fa_contexteTemp TO fa_contexte
+                    WRITE affaireTampon END-WRITE
+            END-PERFORM
+            CLOSE FAffaires
+            CLOSE FAffairesTemp
         ELSE
             IF Wtrouve = 0 THEN
                 DISPLAY "Affaire Inexistante"
@@ -1290,8 +1237,8 @@ RechercheAffaire.
                 END-IF
             END-IF
         END-IF
-    ELSE 
-        display "Fichier affaires inexistant"
+    ELSE
+        DISPLAY "Fichier Affaires Inexistant"
     END-IF
 .
 
@@ -1327,9 +1274,9 @@ ModifierAffaire.
                     ELSE 
                         DISPLAY "Reference: ", fa_refAffaire
                         IF fa_classee = 1 
-                            DISPLAY "Classée"
+                            DISPLAY "Classée: Oui"
                         ELSE
-                            DISPLAY "Non Classée"
+                            DISPLAY "Classée: Non"
                         END-IF
                         DISPLAY "Contexte: ", fa_contexte
                     END-IF
