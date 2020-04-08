@@ -537,10 +537,21 @@ SupprimerJure.
                             ACCEPT dateAjd FROM DATE YYYYMMDD
                             DISPLAY 'lecture de la date...'
                             IF fse_date <= dateAjd
-                                DELETE FConvocations RECORD
-                                NOT INVALID KEY
-                                        DISPLAY 'convo supprimée !'
-                                END-DELETE
+                               
+                                   DISPLAY '**Informations juré**'
+                                   DISPLAY ' Prénom : 'fj_prenom
+                                   DISPLAY ' Nom : 'fj_nom
+                                   DISPLAY ' Adresse : 'fj_adresse
+                                   DISPLAY ' Departement :'fj_departement
+                                   DISPLAY ' '
+                                   Display 'Etes vous sûr de vouloir supprimer ce juré ? 1/0'
+                                   Accept WRep
+                                   IF Wrep = 1
+                                    DELETE FConvocations RECORD
+                                    NOT INVALID KEY
+                                            DISPLAY 'convo supprimée !'
+                                    END-DELETE
+                                   END-IF
                                 ELSE
                                 DISPLAY 'convo gardée'
                             END-IF
@@ -747,7 +758,6 @@ READ FJures KEY fc_jure
         ACCEPT WRep
         IF WRep = 1
         THEN 
-       
         DELETE FConvocations END-DELETE
        ELSE
        DISPLAY 'Suppression annulée'
@@ -1676,7 +1686,6 @@ SupprimerSalle.
         
         IF WRep = 1
 
-                DISPLAY '** Debug 01 ** '
                 OPEN OUTPUT FSallesTemp
                 MOVE 0 to WFin
                 PERFORM WITH TEST AFTER UNTIL WFin = 1
@@ -1690,7 +1699,7 @@ SupprimerSalle.
                         Write salleTamponTemp END-Write
                         DISPLAY 'Pas bon'
                         END-IF
-                        display '** Debug 02**'     
+                            
                 END-PERFORM
             CLOSE FSallesTemp
             CLOSE FSalles
