@@ -547,11 +547,11 @@ SupprimerJure.
                                    IF Wrep = 1
                                     DELETE FConvocations RECORD
                                     NOT INVALID KEY
-                                            DISPLAY 'convo supprimée !'
+                                            DISPLAY 'Convocation supprimée !'
                                     END-DELETE
                                    END-IF
                                 ELSE
-                                DISPLAY 'convo gardée'
+                                DISPLAY 'Suppression annulée.'
                             END-IF
                         END-IF
                     END-IF
@@ -801,18 +801,18 @@ ConsulterSeances.
             AT END 
                 MOVE 1 TO WFin
             NOT AT END
-                DISPLAY 'Numéro: ', fse_numSeance
-                DISPLAY 'Type de tribunal:', fse_typeTribunal
-                DISPLAY 'Nom du Juge: ', fse_juge
-                DISPLAY 'Date de la séance: ', fse_date
+                DISPLAY 'Numéro : ', fse_numSeance
+                DISPLAY 'Type de tribunal :', fse_typeTribunal
+                DISPLAY 'Nom du Juge : ', fse_juge
+                DISPLAY 'Date de la séance:  ', fse_date
                 DISPLAY 'Salle n°', fse_numSalle
-                DISPLAY 'Tribunal: ', fse_numTribunal
-                DISPLAY 'Référence de l affaire: ', fse_refAffaire
+                DISPLAY 'Tribunal : ', fse_numTribunal
+                DISPLAY 'Référence de l''affaire : ', fse_refAffaire
                 DISPLAY ' '
         END-PERFORM
         CLOSE FSeances
     ELSE
-        DISPLAY 'Erreur d ouverture de FSeances'
+        DISPLAY 'Le fichier Séances n''existe pas !'
     END-IF
 .
 
@@ -993,6 +993,8 @@ AjouterSeance.
                                PERFORM WITH TEST AFTER UNTIL WRep = 6 OR WChoix = 0
                                    PERFORM AjouterConvocation
                                    COMPUTE WRep = WRep + 1
+                                   DISPLAY 'Voulez-vous ajouter une autre convocation ? 1/0'
+                                   ACCEPT WChoix
                                END-PERFORM
                                MOVE 0 TO WAuto
                            ELSE
@@ -1288,7 +1290,7 @@ AjouterAffaire.
     END-IF
     CLOSE FAffaires
     PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
-        DISPLAY 'Voulez vous ajouter des seances ? 1 ou 0'
+        DISPLAY 'Voulez vous ajouter des seances ? 1/0'
         ACCEPT WRep
     END-PERFORM
     IF WRep = 1 THEN
@@ -1296,7 +1298,7 @@ AjouterAffaire.
         DISPLAY WRef
         PERFORM WITH TEST AFTER UNTIL WRep = 0
             PERFORM AjouterSeance
-            DISPLAY "Voulez vous en ajouter un autre ? 1 ou 0"
+            DISPLAY "Voulez vous en ajouter un autre ? 1/0"
             PERFORM WITH TEST AFTER UNTIL WRep = 1 OR WRep = 0
                 ACCEPT WRep
             END-PERFORM
@@ -1326,7 +1328,7 @@ SupprimerAffaire.
         END-PERFORM
         CLOSE FAffaires
         IF WTrouve = 1 AND wClasse = 0 THEN
-            DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1 ou 0'
+            DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1/0'
             PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
                 ACCEPT WRep
             END-PERFORM
@@ -1431,7 +1433,7 @@ ModifierAffaire.
                     WRITE affaireTampon END-WRITE
             END-PERFORM
             MOVE WRef TO fa_refAffaire
-            DISPLAY "Classée ? 1 ou 0"
+            DISPLAY "Classée ? 1/0"
             PERFORM WITH TEST AFTER UNTIL fa_classee = 1 OR fa_classee = 0
                 ACCEPT fa_classee
             END-PERFORM
