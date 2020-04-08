@@ -499,7 +499,7 @@ SupprimerJure.
     MOVE 0 TO WFin
     OPEN I-O FJures
 
-    DISPLAY 'Saisir le nom et le prénom du juré à modifier :'
+    DISPLAY 'Saisir le nom et le prénom du juré à supprimer :'
     DISPLAY '  Nom :'
     ACCEPT fj_nom
     DISPLAY '  Prénom :'
@@ -582,7 +582,7 @@ RechercherJuresNonConvoques.
     ELSE
         MOVE 0 TO WFin
         PERFORM WITH TEST AFTER UNTIL WFin = 1
-        READ FJures
+        READ FJures NEXT
         AT END MOVE 1 TO WFin
         NOT AT END
             OPEN INPUT FConvocations
