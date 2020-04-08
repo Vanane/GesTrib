@@ -533,10 +533,21 @@ SupprimerJure.
                             ACCEPT dateAjd FROM DATE YYYYMMDD
                             DISPLAY 'lecture de la date...'
                             IF fse_date <= dateAjd
-                                DELETE FConvocations RECORD
-                                NOT INVALID KEY
-                                        DISPLAY 'convo supprimée !'
-                                END-DELETE
+                               
+                                   DISPLAY '**Informations juré**'
+                                   DISPLAY ' Prénom : 'fj_prenom
+                                   DISPLAY ' Nom : 'fj_nom
+                                   DISPLAY ' Adresse : 'fj_adresse
+                                   DISPLAY ' Departement :'fj_departement
+                                   DISPLAY ''
+                                   Display 'Etes vous sûr de vouloir supprimer ce juré ? 1/0'
+                                   Accept WRep
+                                   IF Wrep = 1
+                                    DELETE FConvocations RECORD
+                                    NOT INVALID KEY
+                                            DISPLAY 'convo supprimée !'
+                                    END-DELETE
+                                   END-IF
                                 ELSE
                                 DISPLAY 'convo gardée'
                             END-IF
@@ -744,7 +755,7 @@ READ FJures KEY fc_jure
     DISPLAY 'Num séance :' fc_numSeance
     DISPLAY 'Caractère valide : 'fc_valide
 
-       DISPLAY 'Souahitez vous vraiment supprimer cette convocation ? 1/0'
+       DISPLAY 'Souhaitez vous vraiment supprimer cette convocation ? 1/0'
         ACCEPT rep
         IF rep = 1
         THEN 
@@ -1384,9 +1395,6 @@ ModifierAffaire.
                     DISPLAY "Affaire déjà Classée"
                 END-IF
             END-IF
-        END-IF
-    ELSE
-        DISPLAY "Fichier Affaires Inexistant"
     END-IF
 .
 
@@ -1556,7 +1564,6 @@ SupprimerSalle.
         
         IF rep = 1
 
-                DISPLAY '** Debug 01 ** '
                 OPEN OUTPUT FSallesTemp
                 MOVE 0 to WFin
                 PERFORM WITH TEST AFTER UNTIL WFin = 1
@@ -1570,7 +1577,7 @@ SupprimerSalle.
                         Write salleTamponTemp END-Write
                         DISPLAY 'Pas bon'
                         END-IF
-                        display '** Debug 02**'     
+                            
                 END-PERFORM
             CLOSE FSallesTemp
             CLOSE FSalles
