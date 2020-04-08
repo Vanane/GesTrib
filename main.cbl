@@ -10,7 +10,7 @@ SELECT FAffaires ASSIGN TO "affaires.dat"
     ACCESS IS SEQUENTIAL
     FILE STATUS IS affaireCR.
 
-SELECT FAffairesTemp ASSIGN TO "affaireTemp.dat"
+SELECT FAffairesTemp ASSIGN TO "affairesTemp.dat"
     ORGANIZATION SEQUENTIAL
     ACCESS IS SEQUENTIAL
     FILE STATUS IS affairesTempCR.
@@ -273,7 +273,7 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
        DISPLAY '   2 : Ajouter'
        DISPLAY '   3 : Modifier'
        DISPLAY '   4 : Supprimer'
-       DISPLAY '   4 : Classer une Affaire'
+       DISPLAY '   5 : Classer une Affaire'
        DISPLAY '----------------'
        DISPLAY '0 : Quitter'
        
@@ -283,7 +283,7 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
            WHEN 2 PERFORM AjouterAffaire
            WHEN 3 PERFORM ModifierAffaire
            WHEN 4 PERFORM SupprimerAffaire
-           WHEN 4 PERFORM ClasserAffaire
+           WHEN 5 PERFORM ClasserAffaire
        END-EVALUATE
 END-PERFORM.
 
