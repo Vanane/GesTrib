@@ -326,11 +326,9 @@ END-PERFORM.
 
 ConsulterProchainesSeances.
     OPEN OUTPUT FSeances
-    DISPLAY seanceCR
     IF seanceCR = 0
        OPEN OUTPUT FConvocations
        MOVE 0 TO WFin
-    DISPLAY convoCR
 
        IF convoCR = 0
            DISPLAY "Saisissez votre nom :"
