@@ -325,15 +325,14 @@ PERFORM WITH TEST AFTER UNTIL choixMenuSec = 0
 END-PERFORM.
 
 ConsulterProchainesSeances.
-    OPEN OUTPUT FSeances
+    OPEN INPUT FSeances
     IF seanceCR = 0
-       OPEN OUTPUT FConvocations
+       OPEN INPUT FConvocations
        MOVE 0 TO WFin
-
        IF convoCR = 0
-           DISPLAY "Saisissez votre nom :"
+           DISPLAY 'Saisissez votre nom :'
            ACCEPT nomJure
-           DISPLAY "Saisissez votre prénom :"
+           DISPLAY 'Saisissez votre prénom :'
            ACCEPT prenomJure
            MOVE 0 TO WDate
            ACCEPT dateAjd FROM DATE YYYYMMDD
@@ -341,7 +340,7 @@ ConsulterProchainesSeances.
            MOVE prenomJure TO fc_prenom
            START FConvocations KEY EQUALS fc_jure
            INVALID KEY
-              DISPLAY "Ce juré n''existe pas"
+              DISPLAY 'Ce juré n''existe pas'
            NOT INVALID KEY
               PERFORM WITH TEST AFTER UNTIL WFin = 1
                   READ FConvocations NEXT
@@ -371,10 +370,14 @@ ConsulterProchainesSeances.
                    DISPLAY "Le ", fse_date, "."
                END-READ
            ELSE
-               DISPLAY "Vous n''avez pas de prochaine séance."
+               DISPLAY 'Vous n''avez pas de prochaine séance.'
            END-IF
+       ELSE
+           DISPLAY 'Aucune convocation ''est disponible.'
        END-IF
        CLOSE FConvocations
+   ELSE 
+       DISPLAY 'Aucune séance n''est programmée.' 
    END-IF
    CLOSE FSeances.
 
@@ -409,7 +412,6 @@ CLOSE FSeances.
        
 ConsulterJures.
     OPEN INPUT FJures
-    DISPLAY 'cr ', jureCR
     MOVE 0 TO WFin
     IF jureCR <> 0
         DISPLAY 'Fichier vide !'
