@@ -1026,7 +1026,7 @@ ModifierSeance.
         ACCEPT fse_numSeance
         READ FSeances
         INVALID KEY
-            DISPLAY 'Séance inexistante !
+            DISPLAY 'Séance inexistante !'
         NOT INVALID KEY
             DISPLAY 'Nom du Juge :'
             ACCEPT WNJuge
@@ -1085,7 +1085,7 @@ ModifierSeance.
                             INVALID KEY 
                                 DISPLAY 'Erreur d''écriture'
                             NOT INVALID KEY
-                                DISPLAY 'La séance a bien été modifiée !
+                                DISPLAY 'La séance a bien été modifiée !'
                             END-REWRITE
                         ELSE
                             DISPLAY 'Salle non disponible !'
