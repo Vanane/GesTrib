@@ -691,7 +691,7 @@ ACCEPT fc_nom
 DISPLAY 'Prenom Juré ?'
 ACCEPT fc_prenom
 
-READ FConvocations KEY fc_
+READ FConvocations KEY fc_jure
     IF jureCR <> 0
        CLOSE FJures
        DISPLAY 'Erreur invalide ! Juré non renseigné dans la liste des jurés'
@@ -1677,69 +1677,67 @@ SupprimerSalle.
         ACCEPT WRep
         
         IF WRep = 1
-            MOVE 0 to Wtrouve1
-            MOVE 0 to Wfin
-            OPEN INPUT FSeances
-            MOVE fsa_numSalle TO fse_numSalle
-            START FSeances KEY EQUALS fse_numSalle
-               INVALID KEY
-               DISPLAY "Erreur clé invalide"
-               NOT INVALID KEY
-                  PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve1 = 1
-                               READ FSeances NEXT
-                               AT END MOVE 1 TO WFin
-                               NOT AT END
-                               IF fse_numSalle <> fsa_numSalle
-                               MOVE 1 to Wfin
-                               ELSE
-                                  If FUNCTION INTEGER-OF-DATE(fse_date) > FUNCTION INTEGER-OF-DATE(dateAjd)
-                                  MOVE 1 to Wtrouve1
-                                  END-IF
-                                END-IF
-                               END-READ
-                           END-PERFORM
-                        END-START
-               IF Wtrouve1 = 0
-                OPEN OUTPUT FSallesTemp
-                MOVE 0 to WFin
-                PERFORM WITH TEST AFTER UNTIL WFin = 1
-                        READ FSalles
-                        AT END MOVE 1 TO WFin
-                        NOT AT END
-                        If fsa_numSalle <> numS OR fsa_numTribunal <> numT
-                        MOVE fsa_numSalle TO fsa_numSalleTemp
-                        MOVE fsa_numTribunal TO fsa_numTribunalTemp
-                        MOVE fsa_capacite TO fsa_capaciteTemp                      
-                        Write salleTamponTemp END-Write
-                        END-IF
-                            
-                END-PERFORM
-                    CLOSE FSallesTemp
-                    CLOSE FSalles
-                    OPEN OUTPUT Fsalles
-                    OPEN INPUT FSallesTemp
-                        MOVE 0 to WFin 
-                        PERFORM WITH TEST AFTER UNTIL WFin = 1
-                            READ FSallesTemp
-                            AT END MOVE 1 TO WFin
-                            NOT AT END 
-                            MOVE  fsa_numSalleTemp TO fsa_numSalle
-                            MOVE fsa_numTribunalTemp TO fsa_numTribunal
-                            MOVE fsa_capaciteTemp TO fsa_capacite
-                            Write salleTampon END-Write
-                            END-READ
-                        END-PERFORM
-        
-        
-                        DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' supprimée'
-                        CLOSE FSallesTemp
-                   ELSE
-                   DISPLAY "Suppression impossible, des séances sont prévues dans cette salle"
-                   END-IF
+           MOVE 0 to Wtrouve1
+           MOVE 0 to Wfin
+           OPEN INPUT FSeances
+           MOVE fsa_numSalle TO fse_numSalle
+           START FSeances KEY EQUALS fse_numSalle
+           INVALID KEY
+               MOVE 0 TO WTrouve1
+           NOT INVALID KEY
+               PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve1 = 1
+                   READ FSeances NEXT
+                   AT END MOVE 1 TO WFin
+                   NOT AT END
+                       IF fse_numSalle <> fsa_numSalle
+                           MOVE 1 to Wfin
+                       ELSE
+                           IF FUNCTION INTEGER-OF-DATE(fse_date) > FUNCTION INTEGER-OF-DATE(dateAjd)
+                               MOVE 1 to Wtrouve1
+                           END-IF
+                       END-IF
+                   END-READ
+               END-PERFORM
+           END-START
+           IF Wtrouve1 = 0
+               OPEN OUTPUT FSallesTemp
+               MOVE 0 to WFin
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                   READ FSalles
+                   AT END MOVE 1 TO WFin
+                   NOT AT END
+                       IF fsa_numSalle <> numS OR fsa_numTribunal <> numT
+                           MOVE fsa_numSalle TO fsa_numSalleTemp
+                           MOVE fsa_numTribunal TO fsa_numTribunalTemp
+                           MOVE fsa_capacite TO fsa_capaciteTemp                      
+                           WRITE salleTamponTemp END-WRITE
+                       END-IF
+                   END-READ                          
+               END-PERFORM
+               CLOSE FSallesTemp
+               CLOSE FSalles
+               OPEN OUTPUT Fsalles
+               OPEN INPUT FSallesTemp
+               MOVE 0 to WFin 
+               PERFORM WITH TEST AFTER UNTIL WFin = 1
+                   READ FSallesTemp
+                   AT END MOVE 1 TO WFin
+                   NOT AT END 
+                       MOVE  fsa_numSalleTemp TO fsa_numSalle
+                       MOVE fsa_numTribunalTemp TO fsa_numTribunal
+                       MOVE fsa_capaciteTemp TO fsa_capacite
+                       WRITE salleTampon END-WRITE
+                   END-READ
+               END-PERFORM
+               DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' supprimée'
+               CLOSE FSallesTemp
+           ELSE
+               DISPLAY "Suppression impossible, des séances sont prévues dans cette salle"
+           END-IF
+
         ELSE           
-        DISPLAY 'Suppression annulée'
-        END-IF
-    
+           DISPLAY 'Suppression annulée'
+        END-IF    
         CLOSE FSalles
     ELSE 
         DISPLAY 'Salle non trouvée'
@@ -1769,28 +1767,27 @@ ELSE
             MOVE fsa_numSalle to fse_numSalle
             MOVE 0 TO Wtrouve
             MOVE 0 to WFin1
-            DISPLAY "DEBUG 01"
+            
             START FSeances KEY EQUALS fse_numSalle
-               INVALID KEY
-               DISPLAY "Clé invalide"
-                NOT INVALID KEY 
-                
+               
+               NOT INVALID KEY                 
                 PERFORM with test after until WFin1 = 1 OR Wtrouve = 1
                 READ FSeances NEXT
-                AT END MOVE 1 TO WFin
+                AT END MOVE 1 TO WFin1
                 NOT AT END
-                   display "DEBUG 02"
+               
                    IF fse_numSalle <> fsa_numSalle
-                   DISPLAY "DEBUG 03"
+                   
                    MOVE 1 to WFin1
                    ELSE
                        If fse_date = wdate
                            MOVE 1 to Wtrouve
-                           DISPLAY "DEBUG 04"
+                           
                        END-IF
                     END-IF
                 END-READ
                 END-PERFORM
+            END-START
 
                 IF Wtrouve = 0
                 Display "Numéro de salle : "fsa_numSalle
