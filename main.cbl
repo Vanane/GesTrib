@@ -1772,11 +1772,12 @@ ELSE
                INVALID KEY
                DISPLAY "Clé invalide"
                 NOT INVALID KEY 
-                PERFORM with test after until Wfin1 = 1 OR Wtrouve = 1
+                PERFORM with test after until WFin1 = 1 OR Wtrouve = 1
                 READ FSeances NEXT
+                AT END MOVE 1 TO WFin
                 NOT AT END
                    IF fse_numSalle <> fsa_numSalle
-                   MOVE 1 to Wfin1
+                   MOVE 1 to WFin1
                    ELSE
                        If fse_date = wdate
                            MOVE 1 to Wtrouve
