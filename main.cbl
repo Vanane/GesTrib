@@ -524,7 +524,7 @@ SupprimerJure.
         ELSE
             PERFORM WITH TEST AFTER UNTIL WFin = 1
                 READ FConvocations NEXT
-                *>AT END MOVE 1 TO WFin
+                AT END MOVE 1 TO WFin
                 NOT AT END
                     IF fj_nom <> fc_nom OR fj_prenom <> fc_prenom
                         MOVE 1 TO WFin
@@ -538,22 +538,21 @@ SupprimerJure.
                             ACCEPT dateAjd FROM DATE YYYYMMDD
                             DISPLAY 'lecture de la date...'
                             IF fse_date <= dateAjd
-                               
-                                   DISPLAY '**Informations juré**'
-                                   DISPLAY ' Prénom : 'fj_prenom
-                                   DISPLAY ' Nom : 'fj_nom
-                                   DISPLAY ' Adresse : 'fj_adresse
-                                   DISPLAY ' Departement :'fj_departement
-                                   DISPLAY ' '
-                                   Display 'Etes vous sûr de vouloir supprimer ce juré ? 1/0'
-                                   Accept WRep
-                                   IF Wrep = 1
-                                    DELETE FConvocations RECORD
-                                    NOT INVALID KEY
-                                            DISPLAY 'Convocation supprimée !'
-                                    END-DELETE
-                                   END-IF
-                                ELSE
+                                DISPLAY '**Informations juré**'
+                                DISPLAY ' Prénom : 'fj_prenom
+                                DISPLAY ' Nom : 'fj_nom
+                                DISPLAY ' Adresse : 'fj_adresse
+                                DISPLAY ' Departement :'fj_departement
+                                DISPLAY ' '
+                                Display 'Etes vous sûr de vouloir supprimer ce juré ? 1/0'
+                                Accept WRep
+                                IF Wrep = 1
+                                   DELETE FConvocations RECORD
+                                   NOT INVALID KEY
+                                       DISPLAY 'Convocation supprimée !'
+                                   END-DELETE
+                                END-IF
+                            ELSE
                                 DISPLAY 'Suppression annulée.'
                             END-IF
                         END-IF
