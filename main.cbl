@@ -1685,8 +1685,7 @@ SupprimerSalle.
             MOVE fsa_numSalle TO fse_numSalle
             START FSeances KEY EQUALS fse_numSalle
                INVALID KEY
-               DISPLAY "null"
-                  NOT INVALID KEY
+               NOT INVALID KEY
                   PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve1 = 1
                                READ FSeances NEXT
                                AT END MOVE 1 TO WFin
