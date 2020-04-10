@@ -629,7 +629,7 @@ ConsulterConvocations.
 AjouterConvocation.
     OPEN I-O FConvocations
     IF convoCR <> 0
-        OPEN INPUT FConvocations
+        OPEN OUTPUT FConvocations
         CLOSE FConvocations
         OPEN I-O FConvocations
     END-IF
@@ -714,58 +714,48 @@ END-IF.
 
 
 SupprimerConvocation.
-
-OPEN I-O FConvocations
-
-Display 'Numéro de la séance'
-Accept fse_numSeance
-
-Display ' Verification que la séance existe et futur'
-OPEN INPUT FSeances
-
-READ FSeances KEY fse_numSeance
-IF seanceCR <> 0
-    CLOSE FSeances
-    DISPLAY 'Séance inexistante'
-    CLOSE FConvocations
-ELSE
-
-IF fse_date <= dateAjd THEN
-DISPLAY 'On ne peut supprimer que les séances programmées'
-CLOSE FSeances
-CLOSE FConvocations
-
-ELSE
-
-Display 'Nom juré ?'
-Accept fc_nom
-Display 'Prenom Juré ?'
-Accept fc_prenom
-
-READ FJures KEY fc_jure
-    IF jureCR <> 0
-       CLOSE FJures
-       DISPLAY 'Ce juré n''existe pas !'
-       CLOSE FConvocations
+    OPEN I-O FConvocations
+    Display 'Numéro de la séance'
+    Accept fse_numSeance
+    OPEN INPUT FSeances
+    READ FSeances KEY fse_numSeance
+    IF seanceCR <> 0
+        CLOSE FSeances
+        DISPLAY 'Séance inexistante'
+        CLOSE FConvocations
     ELSE
-
-    DISPLAY 'Nom du juré :' fc_nom
-    DISPLAY 'Prenom Juré :' fc_prenom
-    DISPLAY 'Num séance :' fc_numSeance
-    DISPLAY 'Caractère valide : 'fc_valide
-
-       DISPLAY 'Souhaitez vous vraiment supprimer cette convocation ? 1/0'
-        ACCEPT WRep
-        IF WRep = 1
-        THEN 
-        DELETE FConvocations END-DELETE
-       ELSE
-       DISPLAY 'Suppression annulée'
-       END-IF
-
+    IF fse_date <= dateAjd THEN
+    DISPLAY 'On ne peut supprimer que les convocations de séances à venir.'
+    CLOSE FSeances
     CLOSE FConvocations
+    ELSE
+        Display 'Nom juré ?'
+    Accept fj_nom
+    Display 'Prenom Juré ?'
+    Accept fj_prenom
+    
+    OPEN INPUT FJures
+    READ FJures KEY fj_cle
+    INVALID KEY
+        DISPLAY 'Le juré de cette convocation n''existe pas/plus, elle est donc invalide.'
+    NOT INVALID KEY    
+        DISPLAY 'Nom du juré :' fc_nom
+        DISPLAY 'Prenom Juré :' fc_prenom
+        DISPLAY 'Num séance :' fc_numSeance
+        DISPLAY 'Le juré s''est-il présenté ? ', fc_valide
+    END-READ
+    CLOSE FJures
+        DISPLAY 'Souhaitez-vous vraiment supprimer cette convocation ? 1/0'
+        ACCEPT WRep
+        IF WRep = 1 THEN 
+            DELETE FConvocations END-DELETE
+            DISPLAY 'Convocation supprimée !'
+        ELSE
+           DISPLAY 'Suppression annulée'
+        END-IF
     END-IF
-.
+    CLOSE FConvocations.
+
 
 RechercherConvosNonValides.
 
@@ -887,7 +877,9 @@ AjouterSeance.
                 NOT INVALID KEY
                     PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
                         READ FSeances NEXT
+                        AT END MOVE 1 TO WFin
                         NOT AT END 
+                        DISPLAY 'prout'
                             IF fse_numSalle <> WNSalle OR fse_numTribunal <> WNTrib THEN
                                 MOVE 1 TO WFin
                             ELSE
@@ -1115,20 +1107,24 @@ SupprimerSeance.
         ACCEPT fse_numSeance
         READ FSeances
         INVALID KEY
-            DISPLAY 'Séance iexistante !'
+            DISPLAY 'Séance inexistante !'
         NOT INVALID KEY
             OPEN I-O FConvocations
-            MOVE 0 TO WTrouve 
-            MOVE 0 TO WFin
-            PERFORM WITH TEST AFTER UNTIL WRep = 1 OR WFin = 1
-                READ FConvocations
-                AT END MOVE 1 TO WFin
-                NOT AT END
-                IF fc_numSeance = fse_numSeance THEN    
-                    MOVE 1 TO WTrouve
-                END-IF
-            END-PERFORM
-            CLOSE FConvocations
+            IF convoCR = 0            
+               MOVE 0 TO WTrouve 
+               MOVE 0 TO WFin
+               PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
+                   READ FConvocations
+                   AT END MOVE 1 TO WFin
+                   NOT AT END
+                   IF fc_numSeance = fse_numSeance THEN    
+                       MOVE 1 TO WTrouve
+                   END-IF
+               END-PERFORM
+               CLOSE FConvocations
+            ELSE
+               MOVE 0 TO WTrouve
+            END-IF
             IF Wtrouve = 0 THEN
                 DISPLAY 'Voulez-vous vraiment supprimer cette séance ? 1/0'
                 PERFORM WITH TEST AFTER UNTIL WRep = 0 OR WRep = 1
@@ -1267,7 +1263,7 @@ AjouterAffaire.
     MOVE 0 TO WFin
     MOVE 0 TO Wtrouve
     MOVE 0 TO WAuto
-    DISPLAY "Référence de l affaire"
+    DISPLAY 'Référence de l''affaire'
     ACCEPT WRef
     OPEN INPUT FAffaires
     PERFORM WITH TEST AFTER UNTIL WTrouve = 1 OR WFin = 1
