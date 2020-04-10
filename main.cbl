@@ -630,8 +630,6 @@ AjouterConvocation.
     OPEN I-O FConvocations
     IF convoCR <> 0
         OPEN OUTPUT FConvocations
-        CLOSE FConvocations
-        OPEN OUTPUT FConvocations
     END-IF
     IF WAuto = 0 THEN
         DISPLAY 'Numéro de la séance'
@@ -693,7 +691,7 @@ ACCEPT fc_nom
 DISPLAY 'Prenom Juré ?'
 ACCEPT fc_prenom
 
-READ FJures KEY fc_jure
+READ FConvocations KEY fc_
     IF jureCR <> 0
        CLOSE FJures
        DISPLAY 'Erreur invalide ! Juré non renseigné dans la liste des jurés'
@@ -1685,6 +1683,7 @@ SupprimerSalle.
             MOVE fsa_numSalle TO fse_numSalle
             START FSeances KEY EQUALS fse_numSalle
                INVALID KEY
+               DISPLAY "Erreur clé invalide"
                NOT INVALID KEY
                   PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve1 = 1
                                READ FSeances NEXT
@@ -1762,25 +1761,32 @@ ELSE
        Accept wdate
        
        OPEN INPUT FSeances
+       DISPLAY "DEBUG 00"
        PERFORM WITH TEST AFTER UNTIL WFin = 1
        READ FSalles 
        AT END MOVE 1 to WFin
        NOT AT END
-       
+            MOVE fsa_numSalle to fse_numSalle
             MOVE 0 TO Wtrouve
+            MOVE 0 to WFin1
+            DISPLAY "DEBUG 01"
             START FSeances KEY EQUALS fse_numSalle
                INVALID KEY
                DISPLAY "Clé invalide"
                 NOT INVALID KEY 
+                
                 PERFORM with test after until WFin1 = 1 OR Wtrouve = 1
                 READ FSeances NEXT
                 AT END MOVE 1 TO WFin
                 NOT AT END
+                   display "DEBUG 02"
                    IF fse_numSalle <> fsa_numSalle
+                   DISPLAY "DEBUG 03"
                    MOVE 1 to WFin1
                    ELSE
                        If fse_date = wdate
                            MOVE 1 to Wtrouve
+                           DISPLAY "DEBUG 04"
                        END-IF
                     END-IF
                 END-READ
