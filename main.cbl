@@ -135,6 +135,7 @@ WORKING-STORAGE SECTION.
 77 WFin1 PIC 9(1).
 77 WRep pic 9(1).
 77 WTrouve PIC 9(1).
+77 Wtrouve1 PIC 9(1).
 77 WRef PIC A(9).
 77 WOut PIC 9(1).
 77 WCr PIC 9(2).
@@ -631,7 +632,7 @@ AjouterConvocation.
     IF convoCR <> 0
         OPEN OUTPUT FConvocations
         CLOSE FConvocations
-        OPEN I-O FConvocations
+        OPEN OUTPUT FConvocations
     END-IF
     IF WAuto = 0 THEN
         DISPLAY 'Numéro de la séance'
@@ -653,7 +654,7 @@ AjouterConvocation.
         READ FJures KEY fj_cle
         INVALID KEY
             DISPLAY 'Ce juré n''existe pas !'
-        NOT INVALID KEY        
+        NOT INVALID KEY       
             MOVE 0 TO Wfin
             MOVE 0 TO Wtrouve
             START FConvocations KEY EQUALS fc_jure
@@ -1617,8 +1618,7 @@ ModifierSalle.
                   MOVE fsa_capacite TO fsa_capaciteTemp
               END-IF
                WRITE salleTamponTemp END-WRITE
-               DISPLAY 'DEBUG : ', salleTempCR
-           END-READ
+                          END-READ
            END-PERFORM
            CLOSE FSallesTemp
            CLOSE FSalles
@@ -1633,8 +1633,7 @@ ModifierSalle.
               MOVE fsa_numTribunalTemp TO fsa_numTribunal
               MOVE fsa_capaciteTemp TO fsa_capacite
               WRITE salleTampon END-WRITE
-              DISPLAY 'DEBUG2 : ', fsa_capaciteTemp
-           END-READ
+              END-READ
            END-PERFORM
            DISPLAY 'Modification effectuée'
            CLOSE FSallesTemp
@@ -1681,7 +1680,29 @@ SupprimerSalle.
         ACCEPT WRep
         
         IF WRep = 1
-
+            MOVE 0 to Wtrouve1
+            MOVE 0 to Wfin
+            OPEN INPUT FSeances
+            MOVE fsa_numSalle TO fse_numSalle
+            START FSeances KEY EQUALS fse_numSalle
+               INVALID KEY
+               DISPLAY "null"
+                  NOT INVALID KEY
+                  PERFORM WITH TEST AFTER UNTIL WFin = 1 OR Wtrouve1 = 1
+                               READ FSeances NEXT
+                               AT END MOVE 1 TO WFin
+                               NOT AT END
+                               IF fse_numSalle <> fsa_numSalle
+                               MOVE 1 to Wfin
+                               ELSE
+                                  If FUNCTION INTEGER-OF-DATE(fse_date) > FUNCTION INTEGER-OF-DATE(dateAjd)
+                                  MOVE 1 to Wtrouve1
+                                  END-IF
+                                END-IF
+                               END-READ
+                           END-PERFORM
+                        END-START
+               IF Wtrouve1 = 0
                 OPEN OUTPUT FSallesTemp
                 MOVE 0 to WFin
                 PERFORM WITH TEST AFTER UNTIL WFin = 1
@@ -1693,30 +1714,31 @@ SupprimerSalle.
                         MOVE fsa_numTribunal TO fsa_numTribunalTemp
                         MOVE fsa_capacite TO fsa_capaciteTemp                      
                         Write salleTamponTemp END-Write
-                        DISPLAY 'Pas bon'
                         END-IF
                             
                 END-PERFORM
-            CLOSE FSallesTemp
-            CLOSE FSalles
-            OPEN OUTPUT Fsalles
-            OPEN INPUT FSallesTemp
-                MOVE 0 to WFin 
-                PERFORM WITH TEST AFTER UNTIL WFin = 1
-                    READ FSallesTemp
-                    AT END MOVE 1 TO WFin
-                    NOT AT END 
-                    MOVE  fsa_numSalleTemp TO fsa_numSalle
-                    MOVE fsa_numTribunalTemp TO fsa_numTribunal
-                    MOVE fsa_capaciteTemp TO fsa_capacite
-                    Write salleTampon END-Write
-                    END-READ
-                END-PERFORM
-
-
-                DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' modifiée'
-                CLOSE FSallesTemp
-
+                    CLOSE FSallesTemp
+                    CLOSE FSalles
+                    OPEN OUTPUT Fsalles
+                    OPEN INPUT FSallesTemp
+                        MOVE 0 to WFin 
+                        PERFORM WITH TEST AFTER UNTIL WFin = 1
+                            READ FSallesTemp
+                            AT END MOVE 1 TO WFin
+                            NOT AT END 
+                            MOVE  fsa_numSalleTemp TO fsa_numSalle
+                            MOVE fsa_numTribunalTemp TO fsa_numTribunal
+                            MOVE fsa_capaciteTemp TO fsa_capacite
+                            Write salleTampon END-Write
+                            END-READ
+                        END-PERFORM
+        
+        
+                        DISPLAY 'Salle 'fsa_numSalle' du tribunal 'fsa_numTribunal' supprimée'
+                        CLOSE FSallesTemp
+                   ELSE
+                   DISPLAY "Suppression impossible, des séances sont prévues dans cette salle"
+                   END-IF
         ELSE           
         DISPLAY 'Suppression annulée'
         END-IF
@@ -1724,8 +1746,7 @@ SupprimerSalle.
         CLOSE FSalles
     ELSE 
         DISPLAY 'Salle non trouvée'
-    END-IF
-.
+    END-IF.
 
 RechercherSallesLibres.
 
@@ -1739,7 +1760,7 @@ OPEN INPUT FSalles
 IF salleCR <> 00
        DISPLAY 'Erreur ouverture fichier'
 ELSE
-       Display "Date choisie ?"
+       Display "Date choisie ? AAAAMMJJ"
        Accept wdate
        
        OPEN INPUT FSeances
